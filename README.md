@@ -56,6 +56,10 @@ Docker Compose coordinará los servicios locales del proyecto. FastAPI expondrá
 │   └── pytest.ini           # Configuración de pytest
 ├── data/
 │   └── samples/              # Datos sintéticos para pruebas
+│       ├── encuesta_demo.csv # Muestra pequeña con errores intencionales
+│       └── encuesta_10000.csv# Muestra de volumen con 10,000 filas válidas
+├── scripts/
+│   └── generate_synthetic_survey.js # Generador reproducible de datos de prueba
 ├── database/
 │   ├── migrations/          # Evolución del esquema, en fases posteriores
 │   └── seeds/               # Datos de referencia, en fases posteriores
@@ -109,6 +113,8 @@ docker compose up --build
 ```
 
 Luego abre [http://localhost:4200](http://localhost:4200), selecciona `data/samples/encuesta_demo.csv`, valida el archivo y confirma el lote después de revisar sus incidencias.
+
+Para una prueba de volumen, usa `data/samples/encuesta_10000.csv`. Es un archivo sintético de 10,000 filas válidas y no contiene datos personales reales.
 
 ## Integración continua
 
