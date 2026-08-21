@@ -23,6 +23,7 @@ MANIFEST
 
 # Entornos virtuales y herramientas Python
 .venv/
+.venv*/
 venv/
 env/
 ENV/

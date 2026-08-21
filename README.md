@@ -4,7 +4,7 @@ INE DataFlow es un proyecto académico para el Instituto Nacional de Estadístic
 
 ## Estado del proyecto
 
-Esta es la fase 1: preparación de la estructura del repositorio y documentación inicial. Todavía no se implementan el backend, el frontend, la base de datos, los contenedores ni los pipelines de CI.
+El proyecto se encuentra en la fase 3: ya existe un esqueleto mínimo del backend con FastAPI y una prueba automatizada del endpoint de salud. Todavía no se implementan la carga y validación de CSV, el frontend, la base de datos, los contenedores ni los pipelines de CI.
 
 ## Arquitectura propuesta
 
@@ -50,8 +50,10 @@ Docker Compose coordinará los servicios locales del proyecto. FastAPI expondrá
 ```text
 .
 ├── backend/
-│   ├── app/                 # Código de la API, en fases posteriores
-│   └── tests/               # Pruebas automatizadas, en fases posteriores
+│   ├── app/                 # Código inicial de la API FastAPI
+│   ├── tests/               # Pruebas automatizadas
+│   ├── requirements.txt     # Dependencias Python
+│   └── pytest.ini           # Configuración de pytest
 ├── database/
 │   ├── migrations/          # Evolución del esquema, en fases posteriores
 │   └── seeds/               # Datos de referencia, en fases posteriores
@@ -70,6 +72,7 @@ Las carpetas vacías se conservan mediante archivos `.gitkeep` hasta que reciban
 - [Reglas de validación de calidad](docs/validation-rules.md)
 - [Catálogo inicial de errores](docs/error-catalog.md)
 - [Criterios de aceptación del MVP](docs/acceptance-criteria.md)
+- [Documentación del backend](backend/README.md)
 
 ## Principios iniciales
 
