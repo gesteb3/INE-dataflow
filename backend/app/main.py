@@ -1,9 +1,10 @@
 """Punto de entrada de la API de INE DataFlow."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from app.api.uploads import router as uploads_router
+from app.db import database_is_healthy
 
 
 class HealthResponse(BaseModel):
@@ -12,6 +13,13 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
+
+
+class DatabaseHealthResponse(BaseModel):
+    """Respuesta del healthcheck de PostgreSQL."""
+
+    status: str
+    database: str
 
 
 app = FastAPI(
@@ -32,3 +40,12 @@ def health_check() -> HealthResponse:
         service="ine-dataflow-api",
         version="0.1.0",
     )
+
+
+@app.get("/health/db", response_model=DatabaseHealthResponse, tags=["health"])
+def database_health_check() -> DatabaseHealthResponse:
+    """Comprueba conectividad entre la API y PostgreSQL."""
+
+    if not database_is_healthy():
+        raise HTTPException(status_code=503, detail="PostgreSQL no está disponible")
+    return DatabaseHealthResponse(status="ok", database="postgresql")

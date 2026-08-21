@@ -6,6 +6,7 @@ Esqueleto inicial de la API de INE DataFlow construido con FastAPI.
 
 - Punto de entrada de la aplicación en `app/main.py`.
 - Endpoint `GET /health` para comprobar disponibilidad.
+- Endpoint `GET /health/db` para comprobar conexión con PostgreSQL.
 - Endpoint `POST /api/v1/uploads/validate` para validar un CSV sin persistirlo todavía.
 - Prueba automatizada del endpoint con pytest.
 - Sin conexión a PostgreSQL y sin procesamiento de archivos CSV todavía.
@@ -42,11 +43,14 @@ Con el contenedor activo, abrir:
 - Swagger UI: `http://localhost:8001/docs`
 - ReDoc: `http://localhost:8001/redoc`
 - Healthcheck: `http://localhost:8001/health`
+- Healthcheck PostgreSQL: `http://localhost:8001/health/db`
 - Esquema OpenAPI: `http://localhost:8001/openapi.json`
 
 En Swagger, usar `POST /api/v1/uploads/validate`, seleccionar el archivo `data/samples/encuesta_demo.csv` y presionar **Execute**. El resultado mostrará registros válidos, rechazados, advertencias y códigos de error.
 
 El puerto externo predeterminado es `8001` porque `8000` puede estar ocupado por otro servicio local. Se puede cambiar con la variable `INE_DATAFLOW_API_PORT`.
+
+PostgreSQL queda disponible en el puerto local `5433` y usa las variables de `.env.example`. Las credenciales reales deben mantenerse en un archivo `.env` local, que no se sube a Git.
 
 Para detener el servicio:
 

@@ -87,6 +87,8 @@ docker compose up --build
 
 Luego abre [Swagger UI](http://localhost:8001/docs) para explorar los endpoints de la API.
 
+Compose también levanta PostgreSQL 16. El estado de la conexión se puede comprobar en [health de PostgreSQL](http://localhost:8001/health/db).
+
 ## Principios iniciales
 
 - Separar procesamiento, persistencia y presentación.
