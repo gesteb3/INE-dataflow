@@ -28,7 +28,7 @@ uvicorn app.main:app --reload
 
 La documentación interactiva estará disponible en `http://127.0.0.1:8000/docs` y el estado del servicio en `http://127.0.0.1:8000/health`.
 
-Ejecutar las pruebas:
+Ejecutar las pruebas desde la raíz del repositorio o desde esta carpeta:
 
 ```bash
 pytest

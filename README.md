@@ -54,6 +54,8 @@ Docker Compose coordinará los servicios locales del proyecto. FastAPI expondrá
 │   ├── tests/               # Pruebas automatizadas
 │   ├── requirements.txt     # Dependencias Python
 │   └── pytest.ini           # Configuración de pytest
+├── data/
+│   └── samples/              # Datos sintéticos para pruebas
 ├── database/
 │   ├── migrations/          # Evolución del esquema, en fases posteriores
 │   └── seeds/               # Datos de referencia, en fases posteriores
@@ -72,6 +74,7 @@ Las carpetas vacías se conservan mediante archivos `.gitkeep` hasta que reciban
 - [Reglas de validación de calidad](docs/validation-rules.md)
 - [Catálogo inicial de errores](docs/error-catalog.md)
 - [Criterios de aceptación del MVP](docs/acceptance-criteria.md)
+- [Flujo y diseño del MVP](docs/architecture/mvp-flow.md)
 - [Documentación del backend](backend/README.md)
 
 ## Principios iniciales
