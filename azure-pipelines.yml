@@ -13,7 +13,8 @@ pool:
 
 variables:
   pythonVersion: '3.12'
-  nodeVersion: '22.x'
+  nodeVersion: '24.x'
+  npmVersion: '11.16.0'
 
 steps:
   - task: UsePythonVersion@0
@@ -39,6 +40,9 @@ steps:
     displayName: 'Usar Node.js $(nodeVersion)'
     inputs:
       versionSpec: '$(nodeVersion)'
+
+  - script: npm install --global npm@$(npmVersion)
+    displayName: 'Usar npm $(npmVersion)'
 
   - script: npm ci
     displayName: 'Instalar dependencias del frontend'
