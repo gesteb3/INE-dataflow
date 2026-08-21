@@ -4,7 +4,7 @@ INE DataFlow es un proyecto académico para el Instituto Nacional de Estadístic
 
 ## Estado del proyecto
 
-El proyecto se encuentra en la fase 3: ya existe un esqueleto mínimo del backend con FastAPI y una prueba automatizada del endpoint de salud. Todavía no se implementan la carga y validación de CSV, el frontend, la base de datos, los contenedores ni los pipelines de CI.
+El proyecto se encuentra en la fase 5: ya cuenta con backend FastAPI, validación de CSV, Docker Compose, PostgreSQL 16, staging y confirmación de registros válidos. Todavía no se implementan el frontend Angular, los pipelines de CI ni los dashboards de Power BI.
 
 ## Arquitectura propuesta
 

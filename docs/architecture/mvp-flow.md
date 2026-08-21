@@ -92,6 +92,6 @@ El MVP deberá poder calcular, como mínimo:
 
 Estas métricas serán la base para un futuro dashboard de Power BI y para medir la reducción de errores y tiempos durante los seis meses planteados en la evaluación.
 
-## Alcance de la siguiente fase
+## Estado de implementación
 
-La próxima implementación deberá crear el endpoint de carga, leer el CSV sintético y ejecutar primero las validaciones estructurales y de campos. PostgreSQL se incorporará después de probar este flujo sin persistencia real.
+El flujo de carga, validación, staging y confirmación ya está implementado en el backend. La siguiente fase podrá construir la interfaz Angular para que el operador ejecute este proceso sin usar directamente Swagger. El acceso a PostgreSQL y la publicación en Power BI seguirán controlados por los estados del lote.

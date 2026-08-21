@@ -1,5 +1,6 @@
 """Modelos de respuesta para la validación de cargas CSV."""
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -27,3 +28,12 @@ class ValidationResponse(BaseModel):
     rejected_rows: int
     warning_rows: int
     issues: list[ValidationIssue]
+
+
+class ConfirmationResponse(BaseModel):
+    """Resultado de la confirmación de un lote revisado."""
+
+    batch_id: str
+    status: Literal["CONFIRMED"]
+    valid_rows: int
+    confirmed_at: datetime

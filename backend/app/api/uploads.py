@@ -1,9 +1,19 @@
 """Endpoints para recepción y validación de archivos."""
 
-from fastapi import APIRouter, File, UploadFile
+from uuid import UUID
 
-from app.schemas.validation import ValidationResponse
-from app.services.csv_validator import validate_csv
+import psycopg
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.repositories.batches import (
+    BatchAlreadyConfirmedError,
+    BatchNotConfirmableError,
+    BatchNotFoundError,
+    confirm_batch,
+    persist_validation_result,
+)
+from app.schemas.validation import ConfirmationResponse, ValidationResponse
+from app.services.csv_validator import validate_csv_result
 
 
 router = APIRouter()
@@ -11,7 +21,32 @@ router = APIRouter()
 
 @router.post("/uploads/validate", response_model=ValidationResponse, tags=["uploads"])
 async def validate_upload(file: UploadFile = File(...)) -> ValidationResponse:
-    """Valida un CSV y devuelve su resumen sin guardarlo todavía."""
+    """Valida un CSV y guarda el lote en staging para revisión."""
 
     content = await file.read()
-    return validate_csv(file.filename or "", content)
+    result = validate_csv_result(file.filename or "", content)
+    try:
+        persist_validation_result(result.response, result.valid_records)
+    except psycopg.Error as error:
+        raise HTTPException(status_code=503, detail="No se pudo guardar el resultado en PostgreSQL") from error
+    return result.response
+
+
+@router.post(
+    "/uploads/{batch_id}/confirm",
+    response_model=ConfirmationResponse,
+    tags=["uploads"],
+)
+def confirm_upload(batch_id: UUID) -> ConfirmationResponse:
+    """Confirma un lote revisado y publica sus filas válidas."""
+
+    try:
+        return confirm_batch(batch_id)
+    except BatchNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Lote no encontrado") from error
+    except BatchAlreadyConfirmedError as error:
+        raise HTTPException(status_code=409, detail="El lote ya fue confirmado") from error
+    except BatchNotConfirmableError as error:
+        raise HTTPException(status_code=409, detail="El lote rechazado no se puede confirmar") from error
+    except psycopg.Error as error:
+        raise HTTPException(status_code=503, detail="No se pudo confirmar el lote en PostgreSQL") from error

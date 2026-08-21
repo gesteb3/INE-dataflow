@@ -3,6 +3,7 @@
 import csv
 import io
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -27,6 +28,22 @@ MAX_FILE_BYTES = 10 * 1024 * 1024
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 CODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,10}$")
 SURVEY_PATTERN = re.compile(r"^[A-Z0-9_-]{3,30}$")
+
+
+@dataclass(frozen=True)
+class ValidatedRecord:
+    """Fila válida preparada para staging, no para exposición HTTP."""
+
+    row_number: int
+    values: dict[str, str]
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    """Respuesta pública y filas válidas internas de una validación."""
+
+    response: ValidationResponse
+    valid_records: list[ValidatedRecord]
 
 
 def _issue(
@@ -258,47 +275,65 @@ def _validate_integer_range(
         )
 
 
-def validate_csv(file_name: str, content: bytes) -> ValidationResponse:
+def validate_csv_result(file_name: str, content: bytes) -> ValidationResult:
     """Valida un archivo CSV en memoria sin persistir sus registros."""
 
     if Path(file_name).suffix.lower() != ".csv":
-        return _base_response(
-            file_name,
-            [_issue("FILE-001", "ERROR", "Solo se aceptan archivos con extensión .csv.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-001", "ERROR", "Solo se aceptan archivos con extensión .csv.")],
+            ),
+            [],
         )
 
     if len(content) > MAX_FILE_BYTES:
-        return _base_response(
-            file_name,
-            [_issue("FILE-009", "ERROR", "El archivo supera el límite de 10 MB.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-009", "ERROR", "El archivo supera el límite de 10 MB.")],
+            ),
+            [],
         )
 
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
-        return _base_response(
-            file_name,
-            [_issue("FILE-003", "ERROR", "El archivo debe estar codificado en UTF-8.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-003", "ERROR", "El archivo debe estar codificado en UTF-8.")],
+            ),
+            [],
         )
 
     if not text.strip():
-        return _base_response(
-            file_name,
-            [_issue("FILE-002", "ERROR", "El archivo está vacío o no contiene filas de datos.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-002", "ERROR", "El archivo está vacío o no contiene filas de datos.")],
+            ),
+            [],
         )
 
     try:
         rows = list(csv.reader(io.StringIO(text, newline=""), strict=True))
     except csv.Error:
-        return _base_response(
-            file_name,
-            [_issue("FILE-008", "ERROR", "La estructura del archivo CSV no se puede interpretar.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-008", "ERROR", "La estructura del archivo CSV no se puede interpretar.")],
+            ),
+            [],
         )
 
     if len(rows) < 2:
-        return _base_response(
-            file_name,
-            [_issue("FILE-002", "ERROR", "El archivo debe contener encabezado y al menos una fila de datos.")],
+        return ValidationResult(
+            _base_response(
+                file_name,
+                [_issue("FILE-002", "ERROR", "El archivo debe contener encabezado y al menos una fila de datos.")],
+            ),
+            [],
         )
 
     header = rows[0]
@@ -329,12 +364,13 @@ def validate_csv(file_name: str, content: bytes) -> ValidationResponse:
     if any(issue.severity == "ERROR" for issue in issues):
         response = _base_response(file_name, issues, len(data_rows))
         response.rejected_rows = len(data_rows)
-        return response
+        return ValidationResult(response, [])
 
     seen_ids: set[str] = set()
     valid_rows = 0
     rejected_rows = 0
     warning_row_numbers: set[int] = set()
+    valid_records: list[ValidatedRecord] = []
 
     for row_number, values in enumerate(data_rows, start=2):
         if len(values) != len(header):
@@ -349,7 +385,9 @@ def validate_csv(file_name: str, content: bytes) -> ValidationResponse:
             rejected_rows += 1
             continue
 
-        row_issues = _validate_row(dict(zip(header, values)), row_number, seen_ids)
+        row = dict(zip(header, values))
+        normalized = {key: value.strip() for key, value in row.items()}
+        row_issues = _validate_row(row, row_number, seen_ids)
         issues.extend(row_issues)
         if any(item.severity == "WARNING" for item in row_issues):
             warning_row_numbers.add(row_number)
@@ -357,15 +395,25 @@ def validate_csv(file_name: str, content: bytes) -> ValidationResponse:
             rejected_rows += 1
         else:
             valid_rows += 1
+            valid_records.append(ValidatedRecord(row_number=row_number, values=normalized))
 
     status = "REVIEW_REQUIRED" if rejected_rows or issues else "READY_FOR_CONFIRMATION"
-    return ValidationResponse(
-        batch_id=str(uuid4()),
-        file_name=file_name,
-        status=status,
-        total_rows=len(data_rows),
-        valid_rows=valid_rows,
-        rejected_rows=rejected_rows,
-        warning_rows=len(warning_row_numbers),
-        issues=issues,
+    return ValidationResult(
+        response=ValidationResponse(
+            batch_id=str(uuid4()),
+            file_name=file_name,
+            status=status,
+            total_rows=len(data_rows),
+            valid_rows=valid_rows,
+            rejected_rows=rejected_rows,
+            warning_rows=len(warning_row_numbers),
+            issues=issues,
+        ),
+        valid_records=valid_records,
     )
+
+
+def validate_csv(file_name: str, content: bytes) -> ValidationResponse:
+    """Valida un CSV y devuelve solo el contrato público de respuesta."""
+
+    return validate_csv_result(file_name, content).response
