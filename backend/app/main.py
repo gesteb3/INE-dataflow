@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.uploads import router as uploads_router
+from app.api.reports import router as reports_router
 from app.db import database_is_healthy
 
 
@@ -38,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(uploads_router, prefix="/api/v1")
+app.include_router(reports_router, prefix="/api/v1")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

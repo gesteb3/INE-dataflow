@@ -4,7 +4,7 @@ INE DataFlow es un proyecto académico para el Instituto Nacional de Estadístic
 
 ## Estado del proyecto
 
-El proyecto se encuentra en la fase 6: ya cuenta con backend FastAPI, validación de CSV, Docker Compose, PostgreSQL 16, staging, confirmación de registros válidos y una interfaz Angular para cargar y revisar encuestas. El pipeline de CI para Azure DevOps valida pruebas, build y contenedores. Power BI todavía queda para una fase posterior.
+El proyecto se encuentra en la fase 7: ya cuenta con backend FastAPI, validación de CSV, Docker Compose, PostgreSQL 16, staging, confirmación de registros válidos, una interfaz Angular y endpoints de reportes de solo lectura para preparar Power BI. El pipeline de CI para Azure DevOps valida pruebas, build y contenedores. Power BI todavía queda para una fase posterior.
 
 ## Arquitectura propuesta
 
@@ -81,6 +81,7 @@ Las carpetas vacías se conservan mediante archivos `.gitkeep` hasta que reciban
 - [Criterios de aceptación del MVP](docs/acceptance-criteria.md)
 - [Flujo y diseño del MVP](docs/architecture/mvp-flow.md)
 - [Documentación del backend](backend/README.md)
+- [Capa de reportes para Power BI](docs/power-bi-reporting.md)
 
 ## Ejecutar la API con Docker
 
@@ -95,6 +96,8 @@ Luego abre [Swagger UI](http://localhost:8001/docs) para explorar los endpoints 
 Compose también levanta PostgreSQL 16. El estado de la conexión se puede comprobar en [health de PostgreSQL](http://localhost:8001/health/db).
 
 La interfaz Angular está disponible en [http://localhost:4200](http://localhost:4200). Desde allí se puede cargar el CSV, revisar sus incidencias y confirmar el lote.
+
+Los reportes agregados están disponibles en [resumen](http://localhost:8001/api/v1/reports/summary) y [métricas por departamento](http://localhost:8001/api/v1/reports/by-department).
 
 ## Principios iniciales
 

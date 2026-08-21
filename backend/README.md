@@ -9,6 +9,8 @@ Esqueleto inicial de la API de INE DataFlow construido con FastAPI.
 - Endpoint `GET /health/db` para comprobar conexión con PostgreSQL.
 - Endpoint `POST /api/v1/uploads/validate` para validar un CSV y guardar el lote en staging.
 - Endpoint `POST /api/v1/uploads/{batch_id}/confirm` para publicar las filas válidas después de la revisión.
+- Endpoint `GET /api/v1/reports/summary` para indicadores generales de calidad.
+- Endpoint `GET /api/v1/reports/by-department` para métricas agregadas por departamento.
 - Prueba automatizada del endpoint con pytest.
 - Persistencia de lotes, errores y registros válidos mediante PostgreSQL.
 
@@ -48,6 +50,11 @@ Con el contenedor activo, abrir:
 - Esquema OpenAPI: `http://localhost:8001/openapi.json`
 
 En Swagger, usar `POST /api/v1/uploads/validate`, seleccionar el archivo `data/samples/encuesta_demo.csv` y presionar **Execute**. El resultado mostrará registros válidos, rechazados, advertencias y códigos de error. Después de revisar el resultado, usar el `batch_id` devuelto en `POST /api/v1/uploads/{batch_id}/confirm`.
+
+Los endpoints de reportes devuelven JSON de solo lectura para una futura conexión con Power BI:
+
+- `http://localhost:8001/api/v1/reports/summary`
+- `http://localhost:8001/api/v1/reports/by-department`
 
 El puerto externo predeterminado es `8001` porque `8000` puede estar ocupado por otro servicio local. Se puede cambiar con la variable `INE_DATAFLOW_API_PORT`.
 
