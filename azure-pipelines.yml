@@ -1,0 +1,59 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  pythonVersion: '3.12'
+  nodeVersion: '22.x'
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: 'Usar Python $(pythonVersion)'
+    inputs:
+      versionSpec: '$(pythonVersion)'
+
+  - script: |
+      python -m pip install --upgrade pip
+      python -m pip install -r backend/requirements.txt
+      python -m pytest --junitxml=$(Common.TestResultsDirectory)/backend-tests.xml
+    displayName: 'Ejecutar pruebas del backend'
+
+  - task: PublishTestResults@2
+    displayName: 'Publicar resultados del backend'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '$(Common.TestResultsDirectory)/backend-tests.xml'
+      testRunTitle: 'Pruebas backend - pytest'
+
+  - task: NodeTool@0
+    displayName: 'Usar Node.js $(nodeVersion)'
+    inputs:
+      versionSpec: '$(nodeVersion)'
+
+  - script: npm ci
+    displayName: 'Instalar dependencias del frontend'
+    workingDirectory: frontend
+
+  - script: npm run build
+    displayName: 'Construir frontend Angular'
+    workingDirectory: frontend
+
+  - script: npm test -- --watch=false
+    displayName: 'Ejecutar pruebas del frontend'
+    workingDirectory: frontend
+
+  - script: docker compose config --quiet
+    displayName: 'Validar configuración de Docker Compose'
+
+  - script: docker compose build api frontend
+    displayName: 'Construir imágenes Docker'

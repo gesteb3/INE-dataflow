@@ -4,7 +4,7 @@ INE DataFlow es un proyecto académico para el Instituto Nacional de Estadístic
 
 ## Estado del proyecto
 
-El proyecto se encuentra en la fase 5: ya cuenta con backend FastAPI, validación de CSV, Docker Compose, PostgreSQL 16, staging y confirmación de registros válidos. Todavía no se implementan el frontend Angular, los pipelines de CI ni los dashboards de Power BI.
+El proyecto se encuentra en la fase 6: ya cuenta con backend FastAPI, validación de CSV, Docker Compose, PostgreSQL 16, staging, confirmación de registros válidos y una interfaz Angular para cargar y revisar encuestas. El pipeline de CI para Azure DevOps valida pruebas, build y contenedores. Power BI todavía queda para una fase posterior.
 
 ## Arquitectura propuesta
 
@@ -62,6 +62,7 @@ Docker Compose coordinará los servicios locales del proyecto. FastAPI expondrá
 ├── docs/
 │   ├── architecture/        # Decisiones y diagramas de arquitectura
 │   └── decisions/           # Registro de decisiones técnicas
+├── azure-pipelines.yml      # Pipeline de CI para Azure DevOps
 ├── .gitignore
 └── README.md
 ```
@@ -99,6 +100,27 @@ La interfaz Angular está disponible en [http://localhost:4200](http://localhost
 - Automatizar pruebas y validaciones antes de integrar cambios.
 - Avanzar por fases pequeñas y revisables.
 
+## Ejecutar el frontend
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose up --build
+```
+
+Luego abre [http://localhost:4200](http://localhost:4200), selecciona `data/samples/encuesta_demo.csv`, valida el archivo y confirma el lote después de revisar sus incidencias.
+
+## Integración continua
+
+El archivo `azure-pipelines.yml` se ejecuta en cada cambio dirigido a `main` y en pull requests hacia `main`. Actualmente realiza:
+
+- Instalación de dependencias y pruebas del backend con pytest.
+- Instalación de dependencias, pruebas y build de Angular.
+- Validación de Docker Compose.
+- Construcción de las imágenes de API y frontend.
+
+Para activarlo en Azure DevOps, crear un pipeline nuevo apuntando al repositorio de GitHub y seleccionar `azure-pipelines.yml`.
+
 ## Próxima fase
 
-La siguiente fase deberá definirse explícitamente antes de comenzar. Esta entrega no incluye commits ni cambios fuera de la estructura y documentación inicial.
+La siguiente fase será definir el modelo de consumo para Power BI, los indicadores del dashboard y las medidas de seguridad antes de publicar datos fuera del entorno local.
