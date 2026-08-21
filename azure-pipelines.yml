@@ -35,7 +35,7 @@ steps:
       testResultsFiles: '$(Common.TestResultsDirectory)/backend-tests.xml'
       testRunTitle: 'Pruebas backend - pytest'
 
-  - task: NodeTool@0
+  - task: UseNode@1
     displayName: 'Usar Node.js $(nodeVersion)'
     inputs:
       versionSpec: '$(nodeVersion)'
