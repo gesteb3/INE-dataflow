@@ -77,6 +77,16 @@ Las carpetas vacías se conservan mediante archivos `.gitkeep` hasta que reciban
 - [Flujo y diseño del MVP](docs/architecture/mvp-flow.md)
 - [Documentación del backend](backend/README.md)
 
+## Ejecutar la API con Docker
+
+Desde la raíz del proyecto:
+
+```bash
+docker compose up --build
+```
+
+Luego abre [Swagger UI](http://localhost:8001/docs) para explorar los endpoints de la API.
+
 ## Principios iniciales
 
 - Separar procesamiento, persistencia y presentación.

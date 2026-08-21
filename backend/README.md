@@ -26,7 +26,30 @@ Iniciar la API:
 uvicorn app.main:app --reload
 ```
 
-La documentación interactiva estará disponible en `http://127.0.0.1:8000/docs` y el estado del servicio en `http://127.0.0.1:8000/health`.
+La documentación interactiva estará disponible en `http://127.0.0.1:8000/docs` y el estado del servicio en `http://127.0.0.1:8000/health` cuando se ejecute directamente con Uvicorn.
+
+## Ejecución con Docker Compose
+
+Desde la raíz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+Con el contenedor activo, abrir:
+
+- Swagger UI: `http://localhost:8001/docs`
+- ReDoc: `http://localhost:8001/redoc`
+- Healthcheck: `http://localhost:8001/health`
+- Esquema OpenAPI: `http://localhost:8001/openapi.json`
+
+El puerto externo predeterminado es `8001` porque `8000` puede estar ocupado por otro servicio local. Se puede cambiar con la variable `INE_DATAFLOW_API_PORT`.
+
+Para detener el servicio:
+
+```bash
+docker compose down
+```
 
 Ejecutar las pruebas desde la raíz del repositorio o desde esta carpeta:
 
