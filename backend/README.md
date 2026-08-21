@@ -51,7 +51,7 @@ En Swagger, usar `POST /api/v1/uploads/validate`, seleccionar el archivo `data/s
 
 El puerto externo predeterminado es `8001` porque `8000` puede estar ocupado por otro servicio local. Se puede cambiar con la variable `INE_DATAFLOW_API_PORT`.
 
-PostgreSQL queda disponible en el puerto local `5433` y usa las variables de `.env.example`. Las credenciales reales deben mantenerse en un archivo `.env` local, que no se sube a Git.
+PostgreSQL queda disponible en el puerto local `5433` y usa las variables de `.env.example`. Las credenciales reales deben mantenerse en un archivo `.env` local, que no se sube a Git. La interfaz Angular queda disponible en `http://localhost:4200` cuando se levanta todo el Compose.
 
 Para detener el servicio:
 

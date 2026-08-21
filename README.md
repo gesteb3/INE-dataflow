@@ -89,6 +89,8 @@ Luego abre [Swagger UI](http://localhost:8001/docs) para explorar los endpoints 
 
 Compose también levanta PostgreSQL 16. El estado de la conexión se puede comprobar en [health de PostgreSQL](http://localhost:8001/health/db).
 
+La interfaz Angular está disponible en [http://localhost:4200](http://localhost:4200). Desde allí se puede cargar el CSV, revisar sus incidencias y confirmar el lote.
+
 ## Principios iniciales
 
 - Separar procesamiento, persistencia y presentación.

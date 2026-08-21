@@ -1,6 +1,7 @@
 """Punto de entrada de la API de INE DataFlow."""
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.uploads import router as uploads_router
@@ -26,6 +27,14 @@ app = FastAPI(
     title="INE DataFlow API",
     description="API para recepción y procesamiento de encuestas del INE.",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
 )
 
 app.include_router(uploads_router, prefix="/api/v1")

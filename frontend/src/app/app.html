@@ -1,0 +1,232 @@
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">INE</div>
+      <div>
+        <p class="brand-name">INE DataFlow</p>
+        <p class="brand-subtitle">Calidad y trazabilidad de encuestas</p>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <span class="status-dot"></span>
+      Entorno local
+    </div>
+  </header>
+
+  <main class="page-container">
+    <section class="hero-section">
+      <div>
+        <p class="eyebrow">OPERACIÓN DE DATOS · MVP</p>
+        <h1>Carga y validación de encuestas</h1>
+        <p class="hero-copy">
+          Procesa un archivo CSV, revisa la calidad de sus registros y confirma
+          únicamente la información lista para análisis.
+        </p>
+      </div>
+      <div class="hero-metric">
+        <span class="metric-label">Flujo actual</span>
+        <strong>Validación controlada</strong>
+        <span>Con revisión humana antes de publicar</span>
+      </div>
+    </section>
+
+    @if (errorMessage(); as error) {
+      <div class="alert alert-error" role="alert">
+        <span class="alert-icon">!</span>
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <section class="workspace-grid">
+      <article class="panel upload-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">01 · RECEPCIÓN</p>
+            <h2>Selecciona un archivo</h2>
+          </div>
+          <span class="panel-icon">↑</span>
+        </div>
+
+        <div
+          class="dropzone"
+          [class.dropzone-selected]="selectedFile()"
+          role="button"
+          tabindex="0"
+          (click)="fileInput.click()"
+          (keydown.enter)="fileInput.click()"
+          (keydown.space)="fileInput.click()"
+        >
+          <input
+            #fileInput
+            type="file"
+            accept=".csv,text/csv"
+            (change)="onFileSelected($event)"
+            hidden
+          />
+          <div class="upload-icon" aria-hidden="true">↥</div>
+          <strong>Arrastra tu CSV aquí</strong>
+          <span>o selecciona un archivo desde tu equipo</span>
+          <small>Formato permitido: CSV · Máximo: 10 MB</small>
+        </div>
+
+        @if (selectedFile(); as file) {
+          <div class="selected-file">
+            <div class="file-type">CSV</div>
+            <div class="file-details">
+              <strong>{{ file.name }}</strong>
+              <span>{{ formatFileSize(file.size) }} · Listo para validar</span>
+            </div>
+            <span class="file-check">✓</span>
+          </div>
+        }
+
+        <button
+          class="primary-button full-width"
+          type="button"
+          [disabled]="!selectedFile() || isProcessing()"
+          (click)="validateFile()"
+        >
+          @if (isProcessing()) {
+            <span class="spinner"></span>
+            Procesando archivo...
+          } @else {
+            Validar archivo
+            <span aria-hidden="true">→</span>
+          }
+        </button>
+      </article>
+
+      <article class="panel process-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">02 · CONTROL</p>
+            <h2>¿Cómo funciona?</h2>
+          </div>
+          <span class="panel-icon muted">i</span>
+        </div>
+
+        <ol class="process-list">
+          <li>
+            <span class="step-number">1</span>
+            <div><strong>Validación estructural</strong><span>Formato, columnas y tamaño</span></div>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <div><strong>Revisión de calidad</strong><span>Tipos, rangos y duplicados</span></div>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <div><strong>Staging seguro</strong><span>Errores y válidos separados</span></div>
+          </li>
+          <li>
+            <span class="step-number">4</span>
+            <div><strong>Confirmación humana</strong><span>Publicación solo al aprobar</span></div>
+          </li>
+        </ol>
+
+        <div class="security-note">
+          <span>♢</span>
+          <p><strong>Control y auditoría</strong> · Cada carga recibe un identificador de lote.</p>
+        </div>
+      </article>
+    </section>
+
+    @if (validation(); as result) {
+      <section class="results-section">
+        <div class="results-heading">
+          <div>
+            <p class="panel-kicker">03 · RESULTADO DE VALIDACIÓN</p>
+            <h2>{{ result.file_name }}</h2>
+          </div>
+          <span class="status-badge" [class]="'status-' + result.status.toLowerCase()">
+            {{ statusLabel(result.status) }}
+          </span>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card summary-total">
+            <span>Total de filas</span>
+            <strong>{{ result.total_rows }}</strong>
+            <small>Leídas del archivo</small>
+          </div>
+          <div class="summary-card summary-valid">
+            <span>Registros válidos</span>
+            <strong>{{ result.valid_rows }}</strong>
+            <small>Listos para staging</small>
+          </div>
+          <div class="summary-card summary-errors">
+            <span>Registros rechazados</span>
+            <strong>{{ result.rejected_rows }}</strong>
+            <small>Requieren corrección</small>
+          </div>
+          <div class="summary-card summary-warnings">
+            <span>Advertencias</span>
+            <strong>{{ result.warning_rows }}</strong>
+            <small>Filas con observaciones</small>
+          </div>
+        </div>
+
+        @if (confirmation(); as confirmed) {
+          <div class="alert alert-success" role="status">
+            <span class="alert-icon">✓</span>
+            <span>Lote confirmado correctamente. {{ confirmed.valid_rows }} registros fueron publicados para análisis.</span>
+          </div>
+        } @else if (canConfirm()) {
+          <div class="confirmation-panel">
+            <div>
+              <strong>Revisa el resultado antes de publicar</strong>
+              <span>Los registros válidos pasarán a la base definitiva; los errores permanecerán auditables.</span>
+            </div>
+            <button class="primary-button" type="button" [disabled]="isProcessing()" (click)="confirmBatch()">
+              Confirmar lote
+              <span aria-hidden="true">✓</span>
+            </button>
+          </div>
+        }
+
+        @if (result.issues.length > 0) {
+          <div class="issues-panel">
+            <div class="issues-heading">
+              <div>
+                <h3>Incidencias detectadas</h3>
+                <span>Detalle de errores y advertencias para revisión</span>
+              </div>
+              <span class="issue-count">{{ result.issues.length }} incidencias</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Severidad</th>
+                    <th>Código</th>
+                    <th>Fila</th>
+                    <th>Columna</th>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (issue of result.issues; track issue.code + '-' + $index) {
+                    <tr>
+                      <td><span class="severity" [class]="'severity-' + issue.severity.toLowerCase()">{{ issue.severity }}</span></td>
+                      <td class="code-cell">{{ issue.code }}</td>
+                      <td>{{ issue.row ?? 'Archivo' }}</td>
+                      <td>{{ issue.column ?? '—' }}</td>
+                      <td>{{ issue.message }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <p class="batch-reference">Lote: <code>{{ result.batch_id }}</code></p>
+      </section>
+    }
+  </main>
+
+  <footer class="footer">
+    <span>INE DataFlow · Proyecto académico</span>
+    <span>FastAPI · PostgreSQL 16 · Angular</span>
+  </footer>
+</div>
