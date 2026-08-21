@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from app.api.uploads import router as uploads_router
+
 
 class HealthResponse(BaseModel):
     """Respuesta del endpoint de disponibilidad del servicio."""
@@ -17,6 +19,8 @@ app = FastAPI(
     description="API para recepción y procesamiento de encuestas del INE.",
     version="0.1.0",
 )
+
+app.include_router(uploads_router, prefix="/api/v1")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
