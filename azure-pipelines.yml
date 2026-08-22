@@ -39,10 +39,15 @@ steps:
   - task: UseNode@1
     displayName: 'Usar Node.js $(nodeVersion)'
     inputs:
-      versionSpec: '$(nodeVersion)'
+      version: '$(nodeVersion)'
 
   - script: npm install --global npm@$(npmVersion)
     displayName: 'Usar npm $(npmVersion)'
+
+  - script: |
+      node --version
+      npm --version
+    displayName: 'Verificar versiones de Node y npm'
 
   - script: npm ci
     displayName: 'Instalar dependencias del frontend'
