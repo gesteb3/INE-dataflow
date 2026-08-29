@@ -51,7 +51,7 @@ def test_department_report_returns_power_bi_rows(monkeypatch) -> None:
                 "total_monthly_income_gtq": Decimal("125000.00"),
             }
         ],
-        error aproposito
+
     )
 
     response = client.get("/api/v1/reports/by-department")
