@@ -44,7 +44,7 @@ def test_department_report_returns_power_bi_rows(monkeypatch) -> None:
                 "department_code": "01",
                 "valid_records": 50,
                 "urban_records": 30,
-                "rural_records": 20,
+                "rural_records": 30,
                 "average_age": Decimal("35.50"),
                 "average_household_size": Decimal("3.20"),
                 "average_monthly_income_gtq": Decimal("2500.00"),
