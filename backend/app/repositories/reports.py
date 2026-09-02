@@ -2,17 +2,23 @@
 
 import psycopg
 from psycopg.rows import dict_row
+from uuid import UUID
 
 from app.db import database_url
 
 
-def get_report_summary() -> dict:
+def get_report_summary(batch_id: UUID | None = None) -> dict:
     """Obtiene indicadores generales de lotes, calidad y confirmaciones."""
 
     with psycopg.connect(database_url(), row_factory=dict_row) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
+                WITH filtered_batches AS (
+                    SELECT *
+                    FROM survey_batches
+                    WHERE (%s IS NULL OR id = %s)
+                )
                 SELECT
                     COUNT(*)::INTEGER AS total_batches,
                     COUNT(*) FILTER (WHERE status = 'CONFIRMED')::INTEGER AS confirmed_batches,
@@ -22,16 +28,18 @@ def get_report_summary() -> dict:
                     COALESCE(SUM(rejected_rows), 0)::INTEGER AS total_rejected_rows,
                     (
                         SELECT COUNT(*)::INTEGER
-                        FROM validation_errors
+                        FROM validation_errors e
+                        INNER JOIN filtered_batches b ON b.id = e.batch_id
                     ) AS total_validation_errors,
                     MAX(confirmed_at) AS last_confirmed_at
-                FROM survey_batches
-                """
+                FROM filtered_batches
+                """,
+                (batch_id, batch_id),
             )
             return cursor.fetchone()
 
 
-def get_department_report() -> list[dict]:
+def get_department_report(batch_id: UUID | None = None) -> list[dict]:
     """Obtiene métricas de registros confirmados agrupadas por departamento."""
 
     with psycopg.connect(database_url(), row_factory=dict_row) as connection:
@@ -49,8 +57,10 @@ def get_department_report() -> list[dict]:
                     COALESCE(ROUND(SUM(monthly_income_gtq), 2), 0)::NUMERIC
                         AS total_monthly_income_gtq
                 FROM valid_survey_records
+                WHERE (%s IS NULL OR batch_id = %s)
                 GROUP BY department_code
                 ORDER BY department_code
-                """
+                """,
+                (batch_id, batch_id),
             )
             return cursor.fetchall()

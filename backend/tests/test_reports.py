@@ -16,7 +16,7 @@ AUTH_HEADERS = {
 def test_report_summary_returns_aggregated_indicators(monkeypatch) -> None:
     monkeypatch.setattr(
         "app.api.reports.get_report_summary",
-        lambda: {
+        lambda batch_id=None: {
             "total_batches": 3,
             "confirmed_batches": 2,
             "total_input_rows": 120,
@@ -44,7 +44,7 @@ def test_report_summary_returns_aggregated_indicators(monkeypatch) -> None:
 def test_department_report_returns_power_bi_rows(monkeypatch) -> None:
     monkeypatch.setattr(
         "app.api.reports.get_department_report",
-        lambda: [
+        lambda batch_id=None: [
             {
                 "department_code": "01",
                 "valid_records": 50,

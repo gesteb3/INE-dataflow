@@ -1,4 +1,5 @@
 import { JsonPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AfterViewInit, Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 
 import {
@@ -14,7 +15,7 @@ import { UploadService } from './services/upload.service';
 
 @Component({
   selector: 'app-root',
-  imports: [JsonPipe],
+  imports: [FormsModule, JsonPipe],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
@@ -31,9 +32,20 @@ export class App implements OnInit, AfterViewInit {
   protected readonly batches = signal<BatchSummary[]>([]);
   protected readonly auditEvents = signal<AuditEvent[]>([]);
   protected readonly mapError = signal<string | null>(null);
+  protected readonly selectedBatchId = signal<string | null>(null);
+  protected readonly selectedDepartmentCode = signal('');
+  protected readonly visibleDepartments = computed(() => {
+    const departmentCode = this.selectedDepartmentCode();
+    return departmentCode
+      ? this.departments().filter((item) => item.department_code === departmentCode)
+      : this.departments();
+  });
+  protected readonly selectedBatch = computed(() =>
+    this.batches().find((item) => item.batch_id === this.selectedBatchId()) ?? null,
+  );
   @ViewChild('departmentMap') private departmentMap?: ElementRef<HTMLDivElement>;
   private mapReady = false;
-  private readonly departmentNames: Record<string, string> = {
+  protected readonly departmentNames: Record<string, string> = {
     '01': 'Guatemala', '02': 'El Progreso', '03': 'Sacatepéquez', '04': 'Chimaltenango',
     '05': 'Escuintla', '06': 'Santa Rosa', '07': 'Sololá', '08': 'Totonicapán',
     '09': 'Quetzaltenango', '10': 'Suchitepéquez', '11': 'Retalhuleu', '12': 'San Marcos',
@@ -89,6 +101,8 @@ export class App implements OnInit, AfterViewInit {
     this.departments.set([]);
     this.batches.set([]);
     this.auditEvents.set([]);
+    this.selectedBatchId.set(null);
+    this.selectedDepartmentCode.set('');
   }
 
   protected navigate(section: 'dashboard' | 'upload' | 'batches' | 'audit'): void {
@@ -104,6 +118,33 @@ export class App implements OnInit, AfterViewInit {
     this.validation.set(null);
     this.confirmation.set(null);
     this.errorMessage.set(null);
+  }
+
+  protected onBatchFilterChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.onBatchFilterValueChange(value);
+  }
+
+  protected onBatchFilterValueChange(value: string): void {
+    this.selectedBatchId.set(value || null);
+    this.selectedDepartmentCode.set('');
+    this.loadReports();
+  }
+
+  protected onDepartmentFilterChange(event: Event): void {
+    this.onDepartmentFilterValueChange((event.target as HTMLSelectElement).value);
+  }
+
+  protected onDepartmentFilterValueChange(value: string): void {
+    this.selectedDepartmentCode.set(value);
+    void this.renderDepartmentMap();
+  }
+
+  protected resetToLatestBatch(): void {
+    const latest = this.batches().find((item) => item.status === 'CONFIRMED') ?? null;
+    this.selectedBatchId.set(latest?.batch_id ?? null);
+    this.selectedDepartmentCode.set('');
+    this.loadReports();
   }
 
   protected exportIssues(batchId: string): void {
@@ -122,21 +163,18 @@ export class App implements OnInit, AfterViewInit {
 
   protected loadDashboard(): void {
     this.isLoadingDashboard.set(true);
-    this.dashboardService.summary().subscribe({
-      next: (result) => this.summary.set(result),
-      error: () => this.summary.set(null),
-    });
-    this.dashboardService.byDepartment().subscribe({
-      next: (result) => {
-        this.departments.set(result);
-        void this.renderDepartmentMap();
-      },
-      error: () => this.departments.set([]),
-    });
     this.dashboardService.batches().subscribe({
-      next: (result) => this.batches.set(result),
-      error: () => this.batches.set([]),
-      complete: () => this.isLoadingDashboard.set(false),
+      next: (result) => {
+        this.batches.set(result);
+        const latestConfirmed = result.find((item) => item.status === 'CONFIRMED');
+        const selectedStillExists = result.some((item) => item.batch_id === this.selectedBatchId() && item.status === 'CONFIRMED');
+        if (!selectedStillExists) this.selectedBatchId.set(latestConfirmed?.batch_id ?? null);
+        this.loadReports();
+      },
+      error: () => {
+        this.batches.set([]);
+        this.loadReports();
+      },
     });
     if (this.currentUser()?.role === 'ADMIN') {
       this.dashboardService.audit().subscribe({
@@ -144,6 +182,22 @@ export class App implements OnInit, AfterViewInit {
         error: () => this.auditEvents.set([]),
       });
     }
+  }
+
+  private loadReports(): void {
+    const batchId = this.selectedBatchId();
+    this.dashboardService.summary(batchId).subscribe({
+      next: (result) => this.summary.set(result),
+      error: () => this.summary.set(null),
+      complete: () => this.isLoadingDashboard.set(false),
+    });
+    this.dashboardService.byDepartment(batchId).subscribe({
+      next: (result) => {
+        this.departments.set(result);
+        void this.renderDepartmentMap();
+      },
+      error: () => this.departments.set([]),
+    });
   }
 
   private async renderDepartmentMap(): Promise<void> {
@@ -155,7 +209,7 @@ export class App implements OnInit, AfterViewInit {
       const geoJson = await geoJsonResponse.json();
       const plotlyModule = await import('plotly.js-dist-min');
       const plotly = plotlyModule.default;
-      const rows = this.departments().map((item) => ({
+      const rows = this.visibleDepartments().map((item) => ({
         department: this.departmentNames[item.department_code] ?? item.department_code,
         value: item.valid_records,
       }));
