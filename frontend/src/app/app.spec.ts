@@ -17,10 +17,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the INE DataFlow heading', async () => {
+  it('should render the INE DataFlow login', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Carga y validación de encuestas');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Controla tus datos desde un solo lugar');
   });
 });

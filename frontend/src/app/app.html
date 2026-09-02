@@ -1,232 +1,43 @@
-<div class="app-shell">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">INE</div>
-      <div>
-        <p class="brand-name">INE DataFlow</p>
-        <p class="brand-subtitle">Calidad y trazabilidad de encuestas</p>
-      </div>
-    </div>
-    <div class="topbar-status">
-      <span class="status-dot"></span>
-      Entorno local
-    </div>
-  </header>
-
-  <main class="page-container">
-    <section class="hero-section">
-      <div>
-        <p class="eyebrow">OPERACIÓN DE DATOS · MVP</p>
-        <h1>Carga y validación de encuestas</h1>
-        <p class="hero-copy">
-          Procesa un archivo CSV, revisa la calidad de sus registros y confirma
-          únicamente la información lista para análisis.
-        </p>
-      </div>
-      <div class="hero-metric">
-        <span class="metric-label">Flujo actual</span>
-        <strong>Validación controlada</strong>
-        <span>Con revisión humana antes de publicar</span>
-      </div>
+@if (!currentUser()) {
+  <main class="login-page">
+    <section class="login-card">
+      <div class="login-brand"><div class="brand-mark" aria-hidden="true">INE</div><div><p class="brand-name">INE DataFlow</p><p class="brand-subtitle">Plataforma de calidad estadística</p></div></div>
+      <div class="login-copy"><p class="eyebrow">PORTAL OPERATIVO</p><h1>Controla tus datos desde un solo lugar</h1><p>Gestiona lotes de encuestas, valida registros y consulta indicadores con trazabilidad.</p></div>
+      <form class="login-form" (submit)="$event.preventDefault(); submitLogin()">
+        <label for="username">Usuario</label><input id="username" type="email" [value]="loginUsername()" (input)="loginUsername.set($any($event.target).value)" autocomplete="username" />
+        <label for="password">Contraseña</label><input id="password" type="password" [value]="loginPassword()" (input)="loginPassword.set($any($event.target).value)" autocomplete="current-password" />
+        @if (loginError(); as error) { <div class="alert alert-error" role="alert"><span class="alert-icon">!</span><span>{{ error }}</span></div> }
+        <button class="primary-button full-width" type="submit" [disabled]="isLoggingIn()">@if (isLoggingIn()) { <span class="spinner"></span> Iniciando sesión... } @else { Iniciar sesión <span>→</span> }</button>
+      </form>
+      <div class="demo-credentials"><strong>Acceso de demostración</strong><span>admin@ine.local · INEDataFlow2026!</span></div><p class="login-footer">MVP académico · Cambia estas credenciales antes de un uso real.</p>
     </section>
-
-    @if (errorMessage(); as error) {
-      <div class="alert alert-error" role="alert">
-        <span class="alert-icon">!</span>
-        <span>{{ error }}</span>
-      </div>
-    }
-
-    <section class="workspace-grid">
-      <article class="panel upload-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">01 · RECEPCIÓN</p>
-            <h2>Selecciona un archivo</h2>
-          </div>
-          <span class="panel-icon">↑</span>
-        </div>
-
-        <div
-          class="dropzone"
-          [class.dropzone-selected]="selectedFile()"
-          role="button"
-          tabindex="0"
-          (click)="fileInput.click()"
-          (keydown.enter)="fileInput.click()"
-          (keydown.space)="fileInput.click()"
-        >
-          <input
-            #fileInput
-            type="file"
-            accept=".csv,text/csv"
-            (change)="onFileSelected($event)"
-            hidden
-          />
-          <div class="upload-icon" aria-hidden="true">↥</div>
-          <strong>Arrastra tu CSV aquí</strong>
-          <span>o selecciona un archivo desde tu equipo</span>
-          <small>Formato permitido: CSV · Máximo: 10 MB</small>
-        </div>
-
-        @if (selectedFile(); as file) {
-          <div class="selected-file">
-            <div class="file-type">CSV</div>
-            <div class="file-details">
-              <strong>{{ file.name }}</strong>
-              <span>{{ formatFileSize(file.size) }} · Listo para validar</span>
-            </div>
-            <span class="file-check">✓</span>
-          </div>
-        }
-
-        <button
-          class="primary-button full-width"
-          type="button"
-          [disabled]="!selectedFile() || isProcessing()"
-          (click)="validateFile()"
-        >
-          @if (isProcessing()) {
-            <span class="spinner"></span>
-            Procesando archivo...
-          } @else {
-            Validar archivo
-            <span aria-hidden="true">→</span>
-          }
-        </button>
-      </article>
-
-      <article class="panel process-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">02 · CONTROL</p>
-            <h2>¿Cómo funciona?</h2>
-          </div>
-          <span class="panel-icon muted">i</span>
-        </div>
-
-        <ol class="process-list">
-          <li>
-            <span class="step-number">1</span>
-            <div><strong>Validación estructural</strong><span>Formato, columnas y tamaño</span></div>
-          </li>
-          <li>
-            <span class="step-number">2</span>
-            <div><strong>Revisión de calidad</strong><span>Tipos, rangos y duplicados</span></div>
-          </li>
-          <li>
-            <span class="step-number">3</span>
-            <div><strong>Staging seguro</strong><span>Errores y válidos separados</span></div>
-          </li>
-          <li>
-            <span class="step-number">4</span>
-            <div><strong>Confirmación humana</strong><span>Publicación solo al aprobar</span></div>
-          </li>
-        </ol>
-
-        <div class="security-note">
-          <span>♢</span>
-          <p><strong>Control y auditoría</strong> · Cada carga recibe un identificador de lote.</p>
-        </div>
-      </article>
-    </section>
-
-    @if (validation(); as result) {
-      <section class="results-section">
-        <div class="results-heading">
-          <div>
-            <p class="panel-kicker">03 · RESULTADO DE VALIDACIÓN</p>
-            <h2>{{ result.file_name }}</h2>
-          </div>
-          <span class="status-badge" [class]="'status-' + result.status.toLowerCase()">
-            {{ statusLabel(result.status) }}
-          </span>
-        </div>
-
-        <div class="summary-grid">
-          <div class="summary-card summary-total">
-            <span>Total de filas</span>
-            <strong>{{ result.total_rows }}</strong>
-            <small>Leídas del archivo</small>
-          </div>
-          <div class="summary-card summary-valid">
-            <span>Registros válidos</span>
-            <strong>{{ result.valid_rows }}</strong>
-            <small>Listos para staging</small>
-          </div>
-          <div class="summary-card summary-errors">
-            <span>Registros rechazados</span>
-            <strong>{{ result.rejected_rows }}</strong>
-            <small>Requieren corrección</small>
-          </div>
-          <div class="summary-card summary-warnings">
-            <span>Advertencias</span>
-            <strong>{{ result.warning_rows }}</strong>
-            <small>Filas con observaciones</small>
-          </div>
-        </div>
-
-        @if (confirmation(); as confirmed) {
-          <div class="alert alert-success" role="status">
-            <span class="alert-icon">✓</span>
-            <span>Lote confirmado correctamente. {{ confirmed.valid_rows }} registros fueron publicados para análisis.</span>
-          </div>
-        } @else if (canConfirm()) {
-          <div class="confirmation-panel">
-            <div>
-              <strong>Revisa el resultado antes de publicar</strong>
-              <span>Los registros válidos pasarán a la base definitiva; los errores permanecerán auditables.</span>
-            </div>
-            <button class="primary-button" type="button" [disabled]="isProcessing()" (click)="confirmBatch()">
-              Confirmar lote
-              <span aria-hidden="true">✓</span>
-            </button>
-          </div>
-        }
-
-        @if (result.issues.length > 0) {
-          <div class="issues-panel">
-            <div class="issues-heading">
-              <div>
-                <h3>Incidencias detectadas</h3>
-                <span>Detalle de errores y advertencias para revisión</span>
-              </div>
-              <span class="issue-count">{{ result.issues.length }} incidencias</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Severidad</th>
-                    <th>Código</th>
-                    <th>Fila</th>
-                    <th>Columna</th>
-                    <th>Descripción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (issue of result.issues; track issue.code + '-' + $index) {
-                    <tr>
-                      <td><span class="severity" [class]="'severity-' + issue.severity.toLowerCase()">{{ issue.severity }}</span></td>
-                      <td class="code-cell">{{ issue.code }}</td>
-                      <td>{{ issue.row ?? 'Archivo' }}</td>
-                      <td>{{ issue.column ?? '—' }}</td>
-                      <td>{{ issue.message }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        }
-
-        <p class="batch-reference">Lote: <code>{{ result.batch_id }}</code></p>
-      </section>
-    }
   </main>
-
-  <footer class="footer">
-    <span>INE DataFlow · Proyecto académico</span>
-    <span>FastAPI · PostgreSQL 16 · Angular</span>
-  </footer>
+} @else {
+<div class="app-shell">
+  <header class="topbar"><div class="brand"><div class="brand-mark" aria-hidden="true">INE</div><div><p class="brand-name">INE DataFlow</p><p class="brand-subtitle">Calidad y trazabilidad de encuestas</p></div></div><div class="topbar-actions"><span class="environment-badge"><span class="status-dot"></span> Entorno local</span><div class="user-chip"><span class="user-avatar">{{ currentUser()!.full_name.charAt(0) }}</span><span><strong>{{ currentUser()!.full_name }}</strong><small>{{ roleLabel(currentUser()!.role) }}</small></span></div><button class="logout-button" type="button" (click)="logout()">Salir</button></div></header>
+  <div class="app-layout">
+    <aside class="sidebar"><p class="sidebar-label">MENÚ PRINCIPAL</p><button class="nav-item" [class.nav-active]="activeSection() === 'dashboard'" (click)="navigate('dashboard')"><span>▦</span> Resumen</button><button class="nav-item" [class.nav-active]="activeSection() === 'upload'" (click)="navigate('upload')"><span>↑</span> Cargar encuesta</button><button class="nav-item" [class.nav-active]="activeSection() === 'batches'" (click)="navigate('batches')"><span>☷</span> Historial de lotes</button>@if (currentUser()!.role === 'ADMIN') { <button class="nav-item" [class.nav-active]="activeSection() === 'audit'" (click)="navigate('audit')"><span>◷</span> Auditoría</button> }<div class="sidebar-bottom"><div class="system-status"><span class="status-dot"></span><div><strong>Sistema operativo</strong><small>API y base de datos conectadas</small></div></div></div></aside>
+    <main class="page-container">
+      @if (activeSection() === 'dashboard') {
+        <section class="section-intro"><div><p class="eyebrow">CENTRO DE CONTROL · INE DATAFLOW</p><h1>Resumen operativo</h1><p class="hero-copy">Monitorea la calidad de los datos recibidos y el avance de las encuestas procesadas.</p></div><button class="secondary-button" type="button" (click)="loadDashboard()">↻ Actualizar datos</button></section>
+        @if (isLoadingDashboard() && !summary()) { <div class="empty-state">Cargando indicadores...</div> }
+        @if (summary(); as report) {
+          <section class="metric-grid"><article class="metric-card"><span class="metric-icon blue">▣</span><div><small>Filas recibidas</small><strong>{{ formatNumber(report.total_input_rows) }}</strong><span>En todos los lotes</span></div></article><article class="metric-card"><span class="metric-icon green">✓</span><div><small>Registros válidos</small><strong>{{ formatNumber(report.confirmed_valid_rows) }}</strong><span>Publicados para análisis</span></div></article><article class="metric-card"><span class="metric-icon red">!</span><div><small>Filas rechazadas</small><strong>{{ formatNumber(report.total_rejected_rows) }}</strong><span>Requieren corrección</span></div></article><article class="metric-card"><span class="metric-icon amber">◷</span><div><small>Lotes procesados</small><strong>{{ formatNumber(report.total_batches) }}</strong><span>{{ formatNumber(report.confirmed_batches) }} confirmados</span></div></article></section>
+          <section class="dashboard-grid"><article class="panel chart-panel"><div class="panel-heading"><div><p class="panel-kicker">DISTRIBUCIÓN TERRITORIAL</p><h2>Registros válidos por departamento</h2></div><span class="panel-icon">▥</span></div>@if (departments().length) { <div class="bar-chart">@for (department of departments(); track department.department_code) { <div class="bar-row"><div class="bar-label"><strong>{{ department.department_code }}</strong><span>{{ formatNumber(department.valid_records) }}</span></div><div class="bar-track"><div class="bar-fill" [style.width.%]="departmentWidth(department.valid_records)"></div></div></div> }</div> } @else { <div class="empty-state">Aún no hay registros confirmados por departamento.</div> }</article><article class="panel insights-panel"><div class="panel-heading"><div><p class="panel-kicker">CALIDAD Y TRAZABILIDAD</p><h2>Estado del flujo</h2></div><span class="panel-icon muted">i</span></div><div class="insight-row"><span class="insight-check">✓</span><div><strong>Validación automática</strong><small>Formato, rangos y duplicados</small></div></div><div class="insight-row"><span class="insight-check">✓</span><div><strong>Revisión humana</strong><small>Confirmación antes de publicar</small></div></div><div class="insight-row"><span class="insight-check">✓</span><div><strong>Auditoría activa</strong><small>Eventos asociados a cada lote</small></div></div><button class="outline-button" type="button" (click)="navigate('upload')">Procesar nuevo lote <span>→</span></button></article></section>
+          <section class="panel table-panel"><div class="panel-heading"><div><p class="panel-kicker">ACTIVIDAD RECIENTE</p><h2>Últimos lotes procesados</h2></div><button class="text-button" type="button" (click)="navigate('batches')">Ver historial →</button></div><div class="table-wrap">@if (batches().length) { <table><thead><tr><th>Archivo</th><th>Estado</th><th>Filas</th><th>Creado</th><th>Confirmado</th></tr></thead><tbody>@for (batch of batches().slice(0, 5); track batch.batch_id) { <tr><td><strong>{{ batch.file_name }}</strong><small class="table-subtext">{{ batch.batch_id }}</small></td><td><span class="status-badge" [class]="'status-' + batch.status.toLowerCase()">{{ batch.status }}</span></td><td>{{ formatNumber(batch.total_rows) }}</td><td>{{ formatDate(batch.created_at) }}</td><td>{{ formatDate(batch.confirmed_at) }}</td></tr> }</tbody></table> } @else { <div class="empty-state">Todavía no hay lotes procesados.</div> }</div></section>
+        }
+      } @else if (activeSection() === 'upload') {
+        <section class="hero-section"><div><p class="eyebrow">OPERACIÓN DE DATOS · MVP</p><h1>Carga y validación de encuestas</h1><p class="hero-copy">Procesa un archivo CSV, revisa la calidad de sus registros y confirma únicamente la información lista para análisis.</p></div><div class="hero-metric"><span class="metric-label">Flujo actual</span><strong>Validación controlada</strong><span>Con revisión humana antes de publicar</span></div></section>
+        @if (errorMessage(); as error) { <div class="alert alert-error" role="alert"><span class="alert-icon">!</span><span>{{ error }}</span></div> }
+        <section class="workspace-grid"><article class="panel upload-panel"><div class="panel-heading"><div><p class="panel-kicker">01 · RECEPCIÓN</p><h2>Selecciona un archivo</h2></div><span class="panel-icon">↑</span></div><div class="dropzone" [class.dropzone-selected]="selectedFile()" role="button" tabindex="0" (click)="fileInput.click()" (keydown.enter)="fileInput.click()" (keydown.space)="fileInput.click()"><input #fileInput type="file" accept=".csv,text/csv" (change)="onFileSelected($event)" hidden /><div class="upload-icon" aria-hidden="true">↥</div><strong>Arrastra tu CSV aquí</strong><span>o selecciona un archivo desde tu equipo</span><small>Formato permitido: CSV · Máximo: 10 MB</small></div>@if (selectedFile(); as file) { <div class="selected-file"><div class="file-type">CSV</div><div class="file-details"><strong>{{ file.name }}</strong><span>{{ formatFileSize(file.size) }} · Listo para validar</span></div><span class="file-check">✓</span></div> }<button class="primary-button full-width" type="button" [disabled]="!selectedFile() || isProcessing()" (click)="validateFile()">@if (isProcessing()) { <span class="spinner"></span> Procesando archivo... } @else { Validar archivo <span>→</span> }</button></article><article class="panel process-panel"><div class="panel-heading"><div><p class="panel-kicker">02 · CONTROL</p><h2>¿Cómo funciona?</h2></div><span class="panel-icon muted">i</span></div><ol class="process-list"><li><span class="step-number">1</span><div><strong>Validación estructural</strong><span>Formato, columnas y tamaño</span></div></li><li><span class="step-number">2</span><div><strong>Revisión de calidad</strong><span>Tipos, rangos y duplicados</span></div></li><li><span class="step-number">3</span><div><strong>Staging seguro</strong><span>Errores y válidos separados</span></div></li><li><span class="step-number">4</span><div><strong>Confirmación humana</strong><span>Publicación solo al aprobar</span></div></li></ol><div class="security-note"><span>♢</span><p><strong>Control y auditoría</strong> · Cada carga recibe un identificador de lote.</p></div></article></section>
+        @if (validation(); as result) { <section class="results-section"><div class="results-heading"><div><p class="panel-kicker">03 · RESULTADO DE VALIDACIÓN</p><h2>{{ result.file_name }}</h2></div><span class="status-badge" [class]="'status-' + result.status.toLowerCase()">{{ statusLabel(result.status) }}</span></div><div class="summary-grid"><div class="summary-card summary-total"><span>Total de filas</span><strong>{{ result.total_rows }}</strong><small>Leídas del archivo</small></div><div class="summary-card summary-valid"><span>Registros válidos</span><strong>{{ result.valid_rows }}</strong><small>Listos para staging</small></div><div class="summary-card summary-errors"><span>Registros rechazados</span><strong>{{ result.rejected_rows }}</strong><small>Requieren corrección</small></div><div class="summary-card summary-warnings"><span>Advertencias</span><strong>{{ result.warning_rows }}</strong><small>Filas con observaciones</small></div></div>@if (confirmation(); as confirmed) { <div class="alert alert-success" role="status"><span class="alert-icon">✓</span><span>Lote confirmado correctamente. {{ confirmed.valid_rows }} registros fueron publicados para análisis.</span></div> } @else if (canConfirm()) { <div class="confirmation-panel"><div><strong>Revisa el resultado antes de publicar</strong><span>Los registros válidos pasarán a la base definitiva; los errores permanecerán auditables.</span></div><button class="primary-button" type="button" [disabled]="isProcessing()" (click)="confirmBatch()">Confirmar lote <span>✓</span></button></div> } @if (result.issues.length > 0) { <div class="issues-panel"><div class="issues-heading"><div><h3>Incidencias detectadas</h3><span>Detalle de errores y advertencias para revisión</span></div><span class="issue-count">{{ result.issues.length }} incidencias</span></div><div class="table-wrap"><table><thead><tr><th>Severidad</th><th>Código</th><th>Fila</th><th>Columna</th><th>Descripción</th></tr></thead><tbody>@for (issue of result.issues; track issue.code + '-' + $index) { <tr><td><span class="severity" [class]="'severity-' + issue.severity.toLowerCase()">{{ issue.severity }}</span></td><td class="code-cell">{{ issue.code }}</td><td>{{ issue.row ?? 'Archivo' }}</td><td>{{ issue.column ?? '—' }}</td><td>{{ issue.message }}</td></tr> }</tbody></table></div></div> }<p class="batch-reference">Lote: <code>{{ result.batch_id }}</code></p></section> }
+      } @else if (activeSection() === 'batches') {
+        <section class="section-intro"><div><p class="eyebrow">TRAZABILIDAD</p><h1>Historial de lotes</h1><p class="hero-copy">Consulta cada archivo recibido, su estado de validación y la fecha de publicación.</p></div><button class="secondary-button" type="button" (click)="loadDashboard()">↻ Actualizar</button></section><section class="panel table-panel"><div class="table-wrap">@if (batches().length) { <table><thead><tr><th>Archivo</th><th>Estado</th><th>Total</th><th>Válidos</th><th>Rechazados</th><th>Creado</th><th>Confirmado</th></tr></thead><tbody>@for (batch of batches(); track batch.batch_id) { <tr><td><strong>{{ batch.file_name }}</strong><small class="table-subtext">{{ batch.batch_id }}</small></td><td><span class="status-badge" [class]="'status-' + batch.status.toLowerCase()">{{ batch.status }}</span></td><td>{{ formatNumber(batch.total_rows) }}</td><td>{{ formatNumber(batch.valid_rows) }}</td><td>{{ formatNumber(batch.rejected_rows) }}</td><td>{{ formatDate(batch.created_at) }}</td><td>{{ formatDate(batch.confirmed_at) }}</td></tr> }</tbody></table> } @else { <div class="empty-state">Todavía no hay lotes procesados.</div> }</div></section>
+      } @else {
+        <section class="section-intro"><div><p class="eyebrow">SEGURIDAD OPERATIVA</p><h1>Auditoría de actividad</h1><p class="hero-copy">Registro de accesos y acciones relevantes realizadas en la plataforma.</p></div><span class="security-badge">ADMIN · Acceso restringido</span></section><section class="panel table-panel"><div class="table-wrap">@if (auditEvents().length) { <table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Recurso</th><th>Detalle</th></tr></thead><tbody>@for (event of auditEvents(); track event.created_at + event.action + $index) { <tr><td>{{ formatDate(event.created_at) }}</td><td>{{ event.username ?? 'Sistema' }}</td><td><span class="audit-action">{{ event.action }}</span></td><td>{{ event.resource_type }}<small class="table-subtext">{{ event.resource_id ?? '—' }}</small></td><td>{{ event.details | json }}</td></tr> }</tbody></table> } @else { <div class="empty-state">Aún no hay eventos de auditoría.</div> }</div></section>
+      }
+    </main>
+  </div>
+  <footer class="footer"><span>INE DataFlow · Proyecto académico</span><span>FastAPI · PostgreSQL 16 · Angular</span></footer>
 </div>
+}

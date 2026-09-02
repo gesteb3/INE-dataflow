@@ -3,9 +3,14 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.schemas.auth import UserInfo
+from app.services.auth import create_access_token
 
 
 client = TestClient(app)
+AUTH_HEADERS = {
+    "Authorization": f"Bearer {create_access_token(UserInfo(username='tester', full_name='Test User', role='ADMIN'))}"
+}
 
 
 def test_report_summary_returns_aggregated_indicators(monkeypatch) -> None:
@@ -22,7 +27,7 @@ def test_report_summary_returns_aggregated_indicators(monkeypatch) -> None:
         },
     )
 
-    response = client.get("/api/v1/reports/summary")
+    response = client.get("/api/v1/reports/summary", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -54,7 +59,7 @@ def test_department_report_returns_power_bi_rows(monkeypatch) -> None:
 
     )
 
-    response = client.get("/api/v1/reports/by-department")
+    response = client.get("/api/v1/reports/by-department", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     assert response.json()[0]["department_code"] == "01"

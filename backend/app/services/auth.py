@@ -16,7 +16,7 @@ PBKDF2_ITERATIONS = 310000
 
 
 def jwt_secret() -> str:
-    return os.getenv("INE_DATAFLOW_JWT_SECRET", "local-only-change-this-secret")
+    return os.getenv("INE_DATAFLOW_JWT_SECRET", "local-only-change-this-secret-32bytes")
 
 
 def verify_password(password: str, encoded_hash: str) -> bool:
