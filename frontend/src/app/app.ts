@@ -1,5 +1,5 @@
 import { JsonPipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 
 import {
   ConfirmationResponse,
@@ -18,7 +18,7 @@ import { UploadService } from './services/upload.service';
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly uploadService = inject(UploadService);
@@ -30,6 +30,17 @@ export class App implements OnInit {
   protected readonly departments = signal<DepartmentReport[]>([]);
   protected readonly batches = signal<BatchSummary[]>([]);
   protected readonly auditEvents = signal<AuditEvent[]>([]);
+  protected readonly mapError = signal<string | null>(null);
+  @ViewChild('departmentMap') private departmentMap?: ElementRef<HTMLDivElement>;
+  private mapReady = false;
+  private readonly departmentNames: Record<string, string> = {
+    '01': 'Guatemala', '02': 'El Progreso', '03': 'Sacatepéquez', '04': 'Chimaltenango',
+    '05': 'Escuintla', '06': 'Santa Rosa', '07': 'Sololá', '08': 'Totonicapán',
+    '09': 'Quetzaltenango', '10': 'Suchitepéquez', '11': 'Retalhuleu', '12': 'San Marcos',
+    '13': 'Huehuetenango', '14': 'Quiché', '15': 'Baja Verapaz', '16': 'Alta Verapaz',
+    '17': 'Petén', '18': 'Izabal', '19': 'Zacapa', '20': 'Chiquimula', '21': 'Jalapa',
+    '22': 'Jutiapa',
+  };
 
   protected readonly loginUsername = signal('admin@ine.local');
   protected readonly loginPassword = signal('INEDataFlow2026!');
@@ -49,6 +60,11 @@ export class App implements OnInit {
     if (this.currentUser()) {
       this.loadDashboard();
     }
+  }
+
+  ngAfterViewInit(): void {
+    this.mapReady = true;
+    void this.renderDepartmentMap();
   }
 
   protected submitLogin(): void {
@@ -111,7 +127,10 @@ export class App implements OnInit {
       error: () => this.summary.set(null),
     });
     this.dashboardService.byDepartment().subscribe({
-      next: (result) => this.departments.set(result),
+      next: (result) => {
+        this.departments.set(result);
+        void this.renderDepartmentMap();
+      },
       error: () => this.departments.set([]),
     });
     this.dashboardService.batches().subscribe({
@@ -124,6 +143,38 @@ export class App implements OnInit {
         next: (result) => this.auditEvents.set(result),
         error: () => this.auditEvents.set([]),
       });
+    }
+  }
+
+  private async renderDepartmentMap(): Promise<void> {
+    if (!this.mapReady || !this.departmentMap || !this.departments().length) return;
+    try {
+      this.mapError.set(null);
+      const geoJsonResponse = await fetch('/guatemala-departments.geojson');
+      if (!geoJsonResponse.ok) throw new Error('GeoJSON no disponible');
+      const geoJson = await geoJsonResponse.json();
+      const plotlyModule = await import('plotly.js-dist-min');
+      const plotly = plotlyModule.default;
+      const rows = this.departments().map((item) => ({
+        department: this.departmentNames[item.department_code] ?? item.department_code,
+        value: item.valid_records,
+      }));
+      await plotly.newPlot(this.departmentMap.nativeElement, [{
+        type: 'choropleth',
+        geojson: geoJson,
+        featureidkey: 'properties.depto',
+        locations: rows.map((row) => row.department),
+        z: rows.map((row) => row.value),
+        colorscale: [[0, '#e6f2fc'], [0.5, '#5a9ed0'], [1, '#0c2d59']],
+        marker: { line: { color: '#ffffff', width: 1 } },
+        hovertemplate: '<b>%{location}</b><br>Registros válidos: %{z}<extra></extra>',
+      }], {
+        geo: { fitbounds: 'locations', visible: false, bgcolor: 'rgba(0,0,0,0)' },
+        margin: { t: 0, r: 0, b: 0, l: 0 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+      }, { responsive: true, displayModeBar: false });
+    } catch {
+      this.mapError.set('No fue posible cargar el mapa departamental.');
     }
   }
 
