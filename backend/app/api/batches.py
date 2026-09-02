@@ -10,7 +10,7 @@ from uuid import UUID
 
 from app.api.auth import current_user, require_roles
 from app.repositories.audit import list_audit_events
-from app.repositories.batch_history import list_batch_issues, list_batches
+from app.repositories.batch_history import list_batch_issues, list_batches, list_valid_records
 from app.schemas.auth import UserInfo
 from app.schemas.batches import AuditEvent, BatchSummary
 from app.schemas.validation import ValidationIssue
@@ -66,6 +66,34 @@ def export_batch_issues(batch_id: UUID, _user: UserInfo = Depends(current_user))
         iter([output.getvalue()]),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="errores-{batch_id}.csv"'},
+    )
+
+
+@router.get("/batches/{batch_id}/valid.csv", tags=["batches"])
+def export_batch_valid_records(batch_id: UUID, _user: UserInfo = Depends(current_user)) -> StreamingResponse:
+    """Descarga el dataset limpio publicado de un lote confirmado."""
+
+    try:
+        records = list_valid_records(batch_id)
+    except psycopg.Error as error:
+        raise HTTPException(status_code=503, detail="No se pudo exportar la encuesta limpia") from error
+
+    output = StringIO(newline="")
+    output.write("\ufeff")
+    writer = csv.writer(output)
+    columns = [
+        "record_id", "survey_code", "interview_date", "department_code",
+        "municipality_code", "urban_rural", "respondent_age", "respondent_sex",
+        "household_size", "monthly_income_gtq",
+    ]
+    writer.writerow(columns)
+    for record in records:
+        writer.writerow([record.get(column) for column in columns])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="encuesta-limpia-{batch_id}.csv"'},
     )
 
 

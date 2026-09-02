@@ -31,6 +31,10 @@ export class DashboardService {
     return this.http.get(`${this.baseUrl}/batches/${batchId}/issues.csv`, { responseType: 'blob' });
   }
 
+  exportValidRecords(batchId: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/batches/${batchId}/valid.csv`, { responseType: 'blob' });
+  }
+
   private batchParams(batchId: string | null): HttpParams {
     return batchId ? new HttpParams().set('batch_id', batchId) : new HttpParams();
   }

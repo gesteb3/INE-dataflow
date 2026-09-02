@@ -184,6 +184,20 @@ export class App implements OnInit {
     });
   }
 
+  protected exportValidRecords(batchId: string): void {
+    this.dashboardService.exportValidRecords(batchId).subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `encuesta-limpia-${batchId}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.errorMessage.set('No fue posible exportar la encuesta limpia.'),
+    });
+  }
+
   protected loadDashboard(): void {
     this.isLoadingDashboard.set(true);
     this.dashboardService.batches().subscribe({

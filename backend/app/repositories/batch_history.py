@@ -38,3 +38,24 @@ def list_batch_issues(batch_id: UUID) -> list[dict]:
                 (batch_id,),
             )
             return cursor.fetchall()
+
+
+def list_valid_records(batch_id: UUID) -> list[dict]:
+    """Devuelve únicamente las filas publicadas de un lote confirmado."""
+
+    with psycopg.connect(database_url(), row_factory=dict_row) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT v.record_id, v.survey_code, v.interview_date::TEXT AS interview_date,
+                       v.department_code, v.municipality_code, v.urban_rural,
+                       v.respondent_age, v.respondent_sex, v.household_size,
+                       v.monthly_income_gtq
+                FROM valid_survey_records v
+                INNER JOIN survey_batches b ON b.id = v.batch_id
+                WHERE v.batch_id = %s AND b.status = 'CONFIRMED'
+                ORDER BY v.id
+                """,
+                (batch_id,),
+            )
+            return cursor.fetchall()
