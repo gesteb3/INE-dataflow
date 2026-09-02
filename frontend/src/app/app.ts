@@ -1,6 +1,6 @@
 import { JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AfterViewInit, Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
 import {
   ConfirmationResponse,
@@ -13,13 +13,29 @@ import { AuthService } from './services/auth.service';
 import { DashboardService } from './services/dashboard.service';
 import { UploadService } from './services/upload.service';
 
+type GeoPosition = [number, number];
+type GeoRing = GeoPosition[];
+type GeoPolygon = GeoRing[];
+type GeoGeometry =
+  | { type: 'Polygon'; coordinates: GeoPolygon }
+  | { type: 'MultiPolygon'; coordinates: GeoPolygon[] };
+type GeoFeature = { properties: { depto: string }; geometry: GeoGeometry };
+type GeoFeatureCollection = { features: GeoFeature[] };
+
+interface DepartmentMapFeature {
+  name: string;
+  path: string;
+  value: number;
+  fill: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [FormsModule, JsonPipe],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
-export class App implements OnInit, AfterViewInit {
+export class App implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly uploadService = inject(UploadService);
@@ -32,6 +48,15 @@ export class App implements OnInit, AfterViewInit {
   protected readonly batches = signal<BatchSummary[]>([]);
   protected readonly auditEvents = signal<AuditEvent[]>([]);
   protected readonly mapError = signal<string | null>(null);
+  protected readonly mapFeatures = signal<DepartmentMapFeature[]>([]);
+  protected readonly mapMinValue = computed(() => {
+    const values = this.mapFeatures().map((feature) => feature.value);
+    return values.length ? Math.min(...values) : 0;
+  });
+  protected readonly mapMaxValue = computed(() => {
+    const values = this.mapFeatures().map((feature) => feature.value);
+    return values.length ? Math.max(...values) : 0;
+  });
   protected readonly selectedBatchId = signal<string | null>(null);
   protected readonly selectedDepartmentCode = signal('');
   protected readonly visibleDepartments = computed(() => {
@@ -43,8 +68,6 @@ export class App implements OnInit, AfterViewInit {
   protected readonly selectedBatch = computed(() =>
     this.batches().find((item) => item.batch_id === this.selectedBatchId()) ?? null,
   );
-  @ViewChild('departmentMap') private departmentMap?: ElementRef<HTMLDivElement>;
-  private mapReady = false;
   protected readonly departmentNames: Record<string, string> = {
     '01': 'Guatemala', '02': 'El Progreso', '03': 'Sacatepéquez', '04': 'Chimaltenango',
     '05': 'Escuintla', '06': 'Santa Rosa', '07': 'Sololá', '08': 'Totonicapán',
@@ -72,11 +95,6 @@ export class App implements OnInit, AfterViewInit {
     if (this.currentUser()) {
       this.loadDashboard();
     }
-  }
-
-  ngAfterViewInit(): void {
-    this.mapReady = true;
-    void this.renderDepartmentMap();
   }
 
   protected submitLogin(): void {
@@ -201,42 +219,85 @@ export class App implements OnInit, AfterViewInit {
   }
 
   private async renderDepartmentMap(): Promise<void> {
-    if (!this.mapReady || !this.departmentMap || !this.departments().length) return;
+    if (!this.departments().length) return;
     try {
       this.mapError.set(null);
       const geoJsonResponse = await fetch('/guatemala-departments.geojson');
       if (!geoJsonResponse.ok) throw new Error('GeoJSON no disponible');
-      const geoJson = await geoJsonResponse.json();
-      const plotlyModule = await import('plotly.js-dist-min');
-      const plotly = plotlyModule.default;
-      const rows = this.visibleDepartments().map((item) => ({
-        department: this.departmentNames[item.department_code] ?? item.department_code,
-        value: item.valid_records,
-      }));
-      await plotly.newPlot(this.departmentMap.nativeElement, [{
-        type: 'choropleth',
-        geojson: geoJson,
-        featureidkey: 'properties.depto',
-        locations: rows.map((row) => row.department),
-        z: rows.map((row) => row.value),
-        colorscale: [[0, '#e6f2fc'], [0.5, '#5a9ed0'], [1, '#0c2d59']],
-        marker: { line: { color: '#ffffff', width: 1 } },
-        hovertemplate: '<b>%{location}</b><br>Registros válidos: %{z}<extra></extra>',
-      }], {
-        // Encuadra todo el GeoJSON para evitar que el mapa se reduzca a una sola geometría.
-        // Si el usuario filtra un departamento, el encuadre vuelve a centrarse en esa selección.
-        geo: {
-          fitbounds: this.selectedDepartmentCode() ? 'locations' : 'geojson',
-          visible: false,
-          bgcolor: 'rgba(0,0,0,0)',
-          projection: { type: 'mercator' },
-        },
-        margin: { t: 0, r: 0, b: 0, l: 0 },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-      }, { responsive: true, displayModeBar: false });
+      const geoJson = await geoJsonResponse.json() as GeoFeatureCollection;
+      const rows = new Map(this.departments().map((item) => [item.department_code, item.valid_records]));
+      const visibleCodes = new Set(this.visibleDepartments().map((item) => item.department_code));
+      const bounds = this.geoBounds(geoJson.features);
+      const values = geoJson.features
+        .map((feature) => this.departmentCode(feature.properties.depto))
+        .filter((code): code is string => Boolean(code && visibleCodes.has(code)))
+        .map((code) => rows.get(code) ?? 0);
+      const minValue = values.length ? Math.min(...values) : 0;
+      const maxValue = values.length ? Math.max(...values) : 0;
+      const features = geoJson.features
+        .map((feature) => {
+          const code = this.departmentCode(feature.properties.depto);
+          if (!code || !visibleCodes.has(code)) return null;
+          const value = rows.get(code) ?? 0;
+          return {
+            name: feature.properties.depto,
+            path: this.geometryPath(feature.geometry, bounds),
+            value,
+            fill: this.mapColor(value, minValue, maxValue),
+          } satisfies DepartmentMapFeature;
+        })
+        .filter((feature): feature is DepartmentMapFeature => feature !== null);
+      this.mapFeatures.set(features);
     } catch {
+      this.mapFeatures.set([]);
       this.mapError.set('No fue posible cargar el mapa departamental.');
     }
+  }
+
+  private departmentCode(name: string): string | null {
+    return Object.entries(this.departmentNames).find(([, departmentName]) => departmentName === name)?.[0] ?? null;
+  }
+
+  private geoBounds(features: GeoFeature[]): { minLon: number; maxLon: number; minLat: number; maxLat: number } {
+    const positions = features.flatMap((feature) => this.geometryPositions(feature.geometry));
+    const longitudes = positions.map(([longitude]) => longitude);
+    const latitudes = positions.map(([, latitude]) => latitude);
+    return {
+      minLon: Math.min(...longitudes),
+      maxLon: Math.max(...longitudes),
+      minLat: Math.min(...latitudes),
+      maxLat: Math.max(...latitudes),
+    };
+  }
+
+  private geometryPositions(geometry: GeoGeometry): GeoPosition[] {
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+    return polygons.flatMap((polygon) => polygon.flatMap((ring) => ring));
+  }
+
+  private geometryPath(
+    geometry: GeoGeometry,
+    bounds: { minLon: number; maxLon: number; minLat: number; maxLat: number },
+  ): string {
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+    const width = bounds.maxLon - bounds.minLon;
+    const height = bounds.maxLat - bounds.minLat;
+    return polygons.map((polygon) => polygon.map((ring) => {
+      const points = ring.map(([longitude, latitude]) => {
+        const x = 35 + ((longitude - bounds.minLon) / width) * 930;
+        const y = 25 + ((bounds.maxLat - latitude) / height) * 850;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      });
+      return `M${points.join(' L')} Z`;
+    }).join(' ')).join(' ');
+  }
+
+  private mapColor(value: number, minValue: number, maxValue: number): string {
+    const ratio = maxValue === minValue ? 0.55 : (value - minValue) / (maxValue - minValue);
+    const start = [219, 237, 251];
+    const end = [12, 45, 89];
+    const channel = (index: number) => Math.round(start[index] + (end[index] - start[index]) * ratio);
+    return `rgb(${channel(0)}, ${channel(1)}, ${channel(2)})`;
   }
 
   protected onFileSelected(event: Event): void {
