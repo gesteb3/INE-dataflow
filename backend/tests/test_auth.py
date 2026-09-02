@@ -1,11 +1,13 @@
 from fastapi.testclient import TestClient
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
+
+import jwt
 
 from app.main import app
 from app.schemas.auth import UserInfo
-from app.services.auth import create_access_token
+from app.services.auth import create_access_token, jwt_secret
 
 
 client = TestClient(app)
@@ -31,6 +33,17 @@ def test_login_returns_bearer_token(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.json()["token_type"] == "bearer"
     assert response.json()["user"]["role"] == "ADMIN"
+
+
+def test_access_token_defaults_to_24_hours(monkeypatch) -> None:
+    monkeypatch.delenv("INE_DATAFLOW_ACCESS_TOKEN_MINUTES", raising=False)
+    before = datetime.now(timezone.utc)
+    token = create_access_token(UserInfo(username="tester", full_name="Test User", role="ADMIN"))
+    payload = jwt.decode(token, jwt_secret(), algorithms=["HS256"])
+    expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+
+    assert expires_at - before >= timedelta(minutes=1439)
+    assert expires_at - before <= timedelta(minutes=1441)
 
 
 def test_protected_report_requires_authentication() -> None:

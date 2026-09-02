@@ -54,7 +54,7 @@ def hash_password(password: str) -> str:
 
 def create_access_token(user: UserInfo) -> str:
     expires = datetime.now(timezone.utc) + timedelta(
-        minutes=int(os.getenv("INE_DATAFLOW_ACCESS_TOKEN_MINUTES", "60"))
+        minutes=int(os.getenv("INE_DATAFLOW_ACCESS_TOKEN_MINUTES", "1440"))
     )
     return jwt.encode(
         {"sub": user.username, "role": user.role, "full_name": user.full_name, "exp": expires},
