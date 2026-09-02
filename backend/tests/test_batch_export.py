@@ -33,5 +33,6 @@ def test_issue_export_returns_csv(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/csv")
+    assert response.content.startswith(b"\xef\xbb\xbf")
     assert "code,severity,row,column,message,value" in response.text
     assert "FIELD-008,ERROR,4,urban_rural,Valor no permitido,X" in response.text

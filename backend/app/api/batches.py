@@ -48,6 +48,8 @@ def export_batch_issues(batch_id: UUID, _user: UserInfo = Depends(current_user))
         raise HTTPException(status_code=503, detail="No se pudieron exportar las incidencias") from error
 
     output = StringIO(newline="")
+    # BOM para que Excel detecte UTF-8 y respete tildes y eñes al abrir el CSV.
+    output.write("\ufeff")
     writer = csv.writer(output)
     writer.writerow(["code", "severity", "row", "column", "message", "value"])
     for issue in issues:
