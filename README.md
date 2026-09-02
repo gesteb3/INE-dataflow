@@ -96,6 +96,8 @@ Luego abre [Swagger UI](http://localhost:8001/docs) para explorar los endpoints 
 
 Compose también levanta PostgreSQL 16. El estado de la conexión se puede comprobar en [health de PostgreSQL](http://localhost:8001/health/db).
 
+Las métricas operativas compatibles con Prometheus están disponibles en [http://localhost:8001/metrics](http://localhost:8001/metrics).
+
 La interfaz Angular está disponible en [http://localhost:4200](http://localhost:4200). Desde allí se puede cargar el CSV, revisar sus incidencias y confirmar el lote.
 
 Los reportes agregados están disponibles en [resumen](http://localhost:8001/api/v1/reports/summary) y [métricas por departamento](http://localhost:8001/api/v1/reports/by-department).

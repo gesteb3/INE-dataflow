@@ -31,6 +31,12 @@ interface DepartmentMapFeature {
   fill: string;
 }
 
+interface DashboardAlert {
+  severity: 'WARNING' | 'CRITICAL';
+  title: string;
+  detail: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [FormsModule, JsonPipe, KeyValuePipe],
@@ -47,6 +53,7 @@ export class App implements OnInit {
   protected readonly currentUser = this.authService.currentUser;
   protected readonly activeSection = signal<'dashboard' | 'upload' | 'ocr' | 'batches' | 'audit' | 'users'>('dashboard');
   protected readonly isLoadingDashboard = signal(false);
+  protected readonly databaseOnline = signal(true);
   protected readonly summary = signal<ReportSummary | null>(null);
   protected readonly departments = signal<DepartmentReport[]>([]);
   protected readonly batches = signal<BatchSummary[]>([]);
@@ -111,6 +118,14 @@ export class App implements OnInit {
   protected readonly canConfirm = computed(() => {
     const result = this.validation();
     return Boolean(result && result.valid_rows > 0 && !this.confirmation());
+  });
+  protected readonly dashboardAlerts = computed<DashboardAlert[]>(() => {
+    const alerts: DashboardAlert[] = [];
+    if (!this.databaseOnline()) alerts.push({ severity: 'CRITICAL', title: 'Base de datos no disponible', detail: 'Revisa el contenedor PostgreSQL antes de procesar nuevos lotes.' });
+    const report = this.summary();
+    if (report && report.total_rejected_rows > 0) alerts.push({ severity: 'WARNING', title: 'Hay registros rechazados', detail: `${this.formatNumber(report.total_rejected_rows)} filas requieren corrección.` });
+    if (report && report.total_validation_errors > 0) alerts.push({ severity: 'WARNING', title: 'Incidencias de calidad detectadas', detail: `${this.formatNumber(report.total_validation_errors)} incidencias están disponibles para auditoría.` });
+    return alerts;
   });
 
   ngOnInit(): void {
@@ -322,6 +337,10 @@ export class App implements OnInit {
 
   protected loadDashboard(): void {
     this.isLoadingDashboard.set(true);
+    this.dashboardService.databaseHealth().subscribe({
+      next: () => this.databaseOnline.set(true),
+      error: () => this.databaseOnline.set(false),
+    });
     this.dashboardService.batches().subscribe({
       next: (result) => {
         this.batches.set(result);

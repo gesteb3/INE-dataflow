@@ -27,6 +27,10 @@ export class DashboardService {
     return this.http.get<AuditEvent[]>(`${this.baseUrl}/audit`);
   }
 
+  databaseHealth(): Observable<{ status: string; database: string }> {
+    return this.http.get<{ status: string; database: string }>(this.baseUrl.replace('/api/v1', '/health/db'));
+  }
+
   exportIssues(batchId: string): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/batches/${batchId}/issues.csv`, { responseType: 'blob' });
   }

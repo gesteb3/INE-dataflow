@@ -17,7 +17,7 @@ def get_report_summary(batch_id: UUID | None = None) -> dict:
                 WITH filtered_batches AS (
                     SELECT *
                     FROM survey_batches
-                    WHERE (%s IS NULL OR id = %s)
+                    WHERE (%s::uuid IS NULL OR id = %s::uuid)
                 )
                 SELECT
                     COUNT(*)::INTEGER AS total_batches,
@@ -57,7 +57,7 @@ def get_department_report(batch_id: UUID | None = None) -> list[dict]:
                     COALESCE(ROUND(SUM(monthly_income_gtq), 2), 0)::NUMERIC
                         AS total_monthly_income_gtq
                 FROM valid_survey_records
-                WHERE (%s IS NULL OR batch_id = %s)
+                WHERE (%s::uuid IS NULL OR batch_id = %s::uuid)
                 GROUP BY department_code
                 ORDER BY department_code
                 """,

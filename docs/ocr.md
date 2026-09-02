@@ -20,3 +20,7 @@ El módulo OCR recibe fotografías (`.jpg`, `.jpeg`, `.png`) o documentos PDF de
 6. Revisar los campos detectados. El resultado queda como previsualización para revisión humana.
 
 El endpoint es `POST /api/v1/ocr/preview` y requiere un token Bearer de un usuario `ADMIN` u `OPERATOR`.
+
+## Monitoreo
+
+El endpoint `GET /metrics` expone métricas agregadas en formato compatible con Prometheus, incluyendo estado de PostgreSQL, lotes, filas válidas, rechazos e incidencias. El dashboard también muestra alertas visuales cuando existen rechazos o la base de datos no está disponible.
