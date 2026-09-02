@@ -55,9 +55,9 @@ def test_admin_can_create_user_and_register_audit(monkeypatch) -> None:
     user_id = uuid4()
     created = {
         "id": user_id,
-        "username": "analyst@ine.local",
-        "full_name": "Analista INE",
-        "role": "ANALYST",
+        "username": "operator@ine.local",
+        "full_name": "Operador INE",
+        "role": "OPERATOR",
         "is_active": True,
         "created_at": datetime.now(timezone.utc),
     }
@@ -69,9 +69,9 @@ def test_admin_can_create_user_and_register_audit(monkeypatch) -> None:
     response = client.post(
         "/api/v1/users",
         headers={"Authorization": f"Bearer {token}"},
-        json={"username": "analyst@ine.local", "full_name": "Analista INE", "password": "SecurePass123!", "role": "ANALYST"},
+        json={"username": "operator@ine.local", "full_name": "Operador INE", "password": "SecurePass123!", "role": "OPERATOR"},
     )
 
     assert response.status_code == 201
-    assert response.json()["role"] == "ANALYST"
+    assert response.json()["role"] == "OPERATOR"
     assert audit_events[0][1] == "USER_CREATED"

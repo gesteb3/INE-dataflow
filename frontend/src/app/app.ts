@@ -483,6 +483,6 @@ export class App implements OnInit {
   }
 
   protected roleLabel(role: UserRole): string {
-    return { ADMIN: 'Administrador', OPERATOR: 'Operador', ANALYST: 'Analista' }[role];
+    return { ADMIN: 'Administrador', OPERATOR: 'Operador' }[role];
   }
 }

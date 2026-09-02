@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-Role = Literal["ADMIN", "OPERATOR", "ANALYST"]
+Role = Literal["ADMIN", "OPERATOR"]
 
 
 class LoginRequest(BaseModel):
