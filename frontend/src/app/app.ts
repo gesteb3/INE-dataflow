@@ -8,10 +8,11 @@ import {
   ValidationStatus,
 } from './models/validation.models';
 import { AuditEvent, BatchSummary, DepartmentReport, ReportSummary } from './models/dashboard.models';
-import { UserRole } from './models/auth.models';
+import { UserAdmin, UserRole } from './models/auth.models';
 import { AuthService } from './services/auth.service';
 import { DashboardService } from './services/dashboard.service';
 import { UploadService } from './services/upload.service';
+import { UserService } from './services/user.service';
 
 type GeoPosition = [number, number];
 type GeoRing = GeoPosition[];
@@ -39,14 +40,23 @@ export class App implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly uploadService = inject(UploadService);
+  private readonly userService = inject(UserService);
 
   protected readonly currentUser = this.authService.currentUser;
-  protected readonly activeSection = signal<'dashboard' | 'upload' | 'batches' | 'audit'>('dashboard');
+  protected readonly activeSection = signal<'dashboard' | 'upload' | 'batches' | 'audit' | 'users'>('dashboard');
   protected readonly isLoadingDashboard = signal(false);
   protected readonly summary = signal<ReportSummary | null>(null);
   protected readonly departments = signal<DepartmentReport[]>([]);
   protected readonly batches = signal<BatchSummary[]>([]);
   protected readonly auditEvents = signal<AuditEvent[]>([]);
+  protected readonly users = signal<UserAdmin[]>([]);
+  protected readonly isSavingUser = signal(false);
+  protected readonly userMessage = signal<string | null>(null);
+  protected readonly userError = signal<string | null>(null);
+  protected readonly newUserUsername = signal('');
+  protected readonly newUserFullName = signal('');
+  protected readonly newUserPassword = signal('');
+  protected readonly newUserRole = signal<UserRole>('OPERATOR');
   protected readonly mapError = signal<string | null>(null);
   protected readonly mapFeatures = signal<DepartmentMapFeature[]>([]);
   protected readonly mapMinValue = computed(() => {
@@ -124,15 +134,79 @@ export class App implements OnInit {
     this.departments.set([]);
     this.batches.set([]);
     this.auditEvents.set([]);
+    this.users.set([]);
     this.selectedBatchId.set(null);
     this.selectedDepartmentCode.set('');
   }
 
-  protected navigate(section: 'dashboard' | 'upload' | 'batches' | 'audit'): void {
+  protected navigate(section: 'dashboard' | 'upload' | 'batches' | 'audit' | 'users'): void {
     this.activeSection.set(section);
     if (section === 'dashboard' || section === 'batches' || section === 'audit') {
       this.loadDashboard();
     }
+    if (section === 'users' && this.currentUser()?.role === 'ADMIN') this.loadUsers();
+  }
+
+  protected loadUsers(): void {
+    this.userError.set(null);
+    this.userService.list().subscribe({
+      next: (users) => this.users.set(users),
+      error: (error) => this.userError.set(error.status === 403 ? 'No tienes permisos para consultar usuarios.' : 'No fue posible cargar los usuarios.'),
+    });
+  }
+
+  protected createUser(): void {
+    if (!this.newUserUsername() || !this.newUserFullName() || this.newUserPassword().length < 8) {
+      this.userError.set('Completa usuario, nombre y una contraseña de mínimo 8 caracteres.');
+      return;
+    }
+    this.isSavingUser.set(true);
+    this.userError.set(null);
+    this.userMessage.set(null);
+    this.userService.create({ username: this.newUserUsername(), full_name: this.newUserFullName(), password: this.newUserPassword(), role: this.newUserRole() }).subscribe({
+      next: () => {
+        this.newUserUsername.set('');
+        this.newUserFullName.set('');
+        this.newUserPassword.set('');
+        this.newUserRole.set('OPERATOR');
+        this.userMessage.set('Usuario creado y registrado en auditoría.');
+        this.isSavingUser.set(false);
+        this.loadUsers();
+        this.loadDashboard();
+      },
+      error: (error) => {
+        this.userError.set(error.status === 409 ? 'Ese usuario ya existe.' : 'No fue posible crear el usuario.');
+        this.isSavingUser.set(false);
+      },
+    });
+  }
+
+  protected changeUserRole(user: UserAdmin, event: Event): void {
+    const role = (event.target as HTMLSelectElement).value as UserRole;
+    this.updateUser(user, { role });
+  }
+
+  protected toggleUser(user: UserAdmin): void {
+    this.updateUser(user, { is_active: !user.is_active });
+  }
+
+  private updateUser(user: UserAdmin, payload: { role?: UserRole; is_active?: boolean }): void {
+    this.isSavingUser.set(true);
+    this.userError.set(null);
+    this.userMessage.set(null);
+    this.userService.update(user.id, payload).subscribe({
+      next: () => {
+        this.userMessage.set('Cambios guardados y registrados en auditoría.');
+        this.isSavingUser.set(false);
+        this.loadUsers();
+        this.loadDashboard();
+      },
+      error: (error) => {
+        this.userError.set(error.status === 400 ? (error.error?.detail ?? 'No se puede realizar ese cambio.') : 'No fue posible actualizar el usuario.');
+        this.isSavingUser.set(false);
+        this.loadUsers();
+      },
+    });
   }
 
   protected startCorrection(): void {

@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -34,6 +35,21 @@ def verify_password(password: str, encoded_hash: str) -> bool:
         return hmac.compare_digest(base64.b64encode(derived).decode(), expected)
     except (ValueError, TypeError):
         return False
+
+
+def hash_password(password: str) -> str:
+    """Genera un hash PBKDF2 con sal aleatoria para almacenar contraseñas."""
+
+    salt = secrets.token_bytes(16)
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS, dklen=32)
+    return "$".join(
+        [
+            "pbkdf2_sha256",
+            str(PBKDF2_ITERATIONS),
+            base64.b64encode(salt).decode(),
+            base64.b64encode(derived).decode(),
+        ]
+    )
 
 
 def create_access_token(user: UserInfo) -> str:
