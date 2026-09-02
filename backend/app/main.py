@@ -9,6 +9,7 @@ from app.api.reports import router as reports_router
 from app.api.auth import router as auth_router
 from app.api.batches import router as batches_router
 from app.api.users import router as users_router
+from app.api.ocr import router as ocr_router
 from app.db import database_is_healthy
 
 
@@ -46,6 +47,7 @@ app.include_router(reports_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(batches_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+app.include_router(ocr_router, prefix="/api/v1")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

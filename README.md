@@ -82,6 +82,7 @@ Las carpetas vacías se conservan mediante archivos `.gitkeep` hasta que reciban
 - [Flujo y diseño del MVP](docs/architecture/mvp-flow.md)
 - [Documentación del backend](backend/README.md)
 - [Capa de reportes para Power BI](docs/power-bi-reporting.md)
+- [OCR de encuestas en papel](docs/ocr.md)
 
 ## Ejecutar la API con Docker
 

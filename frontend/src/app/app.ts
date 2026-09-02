@@ -1,4 +1,4 @@
-import { JsonPipe } from '@angular/common';
+import { JsonPipe, KeyValuePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
@@ -8,11 +8,12 @@ import {
   ValidationStatus,
 } from './models/validation.models';
 import { AuditEvent, BatchSummary, DepartmentReport, ReportSummary } from './models/dashboard.models';
-import { UserAdmin, UserRole } from './models/auth.models';
+import { OcrFileResult, UserAdmin, UserRole } from './models/auth.models';
 import { AuthService } from './services/auth.service';
 import { DashboardService } from './services/dashboard.service';
 import { UploadService } from './services/upload.service';
 import { UserService } from './services/user.service';
+import { OcrService } from './services/ocr.service';
 
 type GeoPosition = [number, number];
 type GeoRing = GeoPosition[];
@@ -32,7 +33,7 @@ interface DepartmentMapFeature {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, JsonPipe],
+  imports: [FormsModule, JsonPipe, KeyValuePipe],
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
@@ -41,9 +42,10 @@ export class App implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly uploadService = inject(UploadService);
   private readonly userService = inject(UserService);
+  private readonly ocrService = inject(OcrService);
 
   protected readonly currentUser = this.authService.currentUser;
-  protected readonly activeSection = signal<'dashboard' | 'upload' | 'batches' | 'audit' | 'users'>('dashboard');
+  protected readonly activeSection = signal<'dashboard' | 'upload' | 'ocr' | 'batches' | 'audit' | 'users'>('dashboard');
   protected readonly isLoadingDashboard = signal(false);
   protected readonly summary = signal<ReportSummary | null>(null);
   protected readonly departments = signal<DepartmentReport[]>([]);
@@ -57,6 +59,11 @@ export class App implements OnInit {
   protected readonly newUserFullName = signal('');
   protected readonly newUserPassword = signal('');
   protected readonly newUserRole = signal<UserRole>('OPERATOR');
+  protected readonly selectedOcrFiles = signal<File[]>([]);
+  protected readonly ocrResults = signal<OcrFileResult[]>([]);
+  protected readonly selectedOcrFileNames = computed(() => this.selectedOcrFiles().map((file) => file.name).join(', '));
+  protected readonly isProcessingOcr = signal(false);
+  protected readonly ocrError = signal<string | null>(null);
   protected readonly mapError = signal<string | null>(null);
   protected readonly mapFeatures = signal<DepartmentMapFeature[]>([]);
   protected readonly mapMinValue = computed(() => {
@@ -139,12 +146,53 @@ export class App implements OnInit {
     this.selectedDepartmentCode.set('');
   }
 
-  protected navigate(section: 'dashboard' | 'upload' | 'batches' | 'audit' | 'users'): void {
+  protected navigate(section: 'dashboard' | 'upload' | 'ocr' | 'batches' | 'audit' | 'users'): void {
     this.activeSection.set(section);
     if (section === 'dashboard' || section === 'batches' || section === 'audit') {
       this.loadDashboard();
     }
     if (section === 'users' && this.currentUser()?.role === 'ADMIN') this.loadUsers();
+  }
+
+  protected onOcrFilesSelected(event: Event): void {
+    const files = Array.from((event.target as HTMLInputElement).files ?? []);
+    const totalBytes = files.reduce((total, file) => total + file.size, 0);
+    if (!files.length) return;
+    if (files.length > 5) {
+      this.ocrError.set('Puedes seleccionar como máximo 5 archivos.');
+      this.selectedOcrFiles.set([]);
+      return;
+    }
+    if (files.some((file) => file.size > 10 * 1024 * 1024)) {
+      this.ocrError.set('Cada archivo OCR debe pesar como máximo 10 MB.');
+      this.selectedOcrFiles.set([]);
+      return;
+    }
+    if (totalBytes > 25 * 1024 * 1024) {
+      this.ocrError.set('La selección completa debe pesar como máximo 25 MB.');
+      this.selectedOcrFiles.set([]);
+      return;
+    }
+    this.ocrError.set(null);
+    this.ocrResults.set([]);
+    this.selectedOcrFiles.set(files);
+  }
+
+  protected processOcr(): void {
+    const files = this.selectedOcrFiles();
+    if (!files.length) return;
+    this.isProcessingOcr.set(true);
+    this.ocrError.set(null);
+    this.ocrService.preview(files).subscribe({
+      next: (results) => {
+        this.ocrResults.set(results);
+        this.isProcessingOcr.set(false);
+      },
+      error: (error) => {
+        this.ocrError.set(error.error?.detail ?? 'No fue posible procesar los archivos OCR.');
+        this.isProcessingOcr.set(false);
+      },
+    });
   }
 
   protected loadUsers(): void {

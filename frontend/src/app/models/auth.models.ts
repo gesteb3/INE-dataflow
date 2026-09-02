@@ -22,6 +22,14 @@ export interface UserCreateRequest {
   role: UserRole;
 }
 
+export interface OcrFileResult {
+  file_name: string;
+  status: 'PROCESSED' | 'ERROR';
+  extracted_text: string;
+  fields: Record<string, string | null>;
+  message?: string | null;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
