@@ -223,7 +223,14 @@ export class App implements OnInit, AfterViewInit {
         marker: { line: { color: '#ffffff', width: 1 } },
         hovertemplate: '<b>%{location}</b><br>Registros válidos: %{z}<extra></extra>',
       }], {
-        geo: { fitbounds: 'locations', visible: false, bgcolor: 'rgba(0,0,0,0)' },
+        // Encuadra todo el GeoJSON para evitar que el mapa se reduzca a una sola geometría.
+        // Si el usuario filtra un departamento, el encuadre vuelve a centrarse en esa selección.
+        geo: {
+          fitbounds: this.selectedDepartmentCode() ? 'locations' : 'geojson',
+          visible: false,
+          bgcolor: 'rgba(0,0,0,0)',
+          projection: { type: 'mercator' },
+        },
         margin: { t: 0, r: 0, b: 0, l: 0 },
         paper_bgcolor: 'rgba(0,0,0,0)',
       }, { responsive: true, displayModeBar: false });
