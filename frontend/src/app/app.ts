@@ -82,6 +82,28 @@ export class App implements OnInit {
     }
   }
 
+  protected startCorrection(): void {
+    this.activeSection.set('upload');
+    this.selectedFile.set(null);
+    this.validation.set(null);
+    this.confirmation.set(null);
+    this.errorMessage.set(null);
+  }
+
+  protected exportIssues(batchId: string): void {
+    this.dashboardService.exportIssues(batchId).subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `errores-${batchId}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.errorMessage.set('No fue posible exportar las incidencias del lote.'),
+    });
+  }
+
   protected loadDashboard(): void {
     this.isLoadingDashboard.set(true);
     this.dashboardService.summary().subscribe({

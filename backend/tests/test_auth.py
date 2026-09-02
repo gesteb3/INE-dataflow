@@ -32,3 +32,9 @@ def test_protected_report_requires_authentication() -> None:
     response = client.get("/api/v1/reports/summary")
 
     assert response.status_code == 401
+
+
+def test_issue_export_requires_authentication() -> None:
+    response = client.get("/api/v1/batches/00000000-0000-0000-0000-000000000000/issues.csv")
+
+    assert response.status_code == 401

@@ -98,6 +98,7 @@ td { padding: 12px 14px; border-top: 1px solid #edf1f5; color: #536a85; vertical
 .severity-error { background: #ffe7e7; color: #b34b4b; }.severity-warning { background: #fff1cf; color: #a87817; }
 .batch-reference { margin: 15px 0 0; color: #99a6b6; font-size: 10px; }
 .batch-reference code { color: #6f8198; font-family: 'Courier New', monospace; }
+.issue-actions, .correction-actions { display: flex; align-items: center; gap: 12px; }.issue-actions .text-button { padding: 0; }.correction-actions { justify-content: space-between; }.correction-actions .batch-reference { margin: 0; }
 .footer { display: flex; justify-content: space-between; width: min(1180px, 90vw); margin: 0 auto; padding: 0 0 28px; color: #99a7b8; font-size: 10px; }
 .login-page { display: grid; min-height: 100vh; place-items: center; padding: 32px 20px; background: radial-gradient(circle at 12% 10%, #eaf4ff, transparent 35%), #f5f7fb; }
 .login-card { width: min(430px, 100%); padding: 38px; border: 1px solid #dfe7f2; border-radius: 18px; background: #fff; box-shadow: 0 18px 45px rgb(27 65 108 / 10%); }
@@ -120,5 +121,6 @@ td { padding: 12px 14px; border-top: 1px solid #edf1f5; color: #536a85; vertical
   .page-container { width: 90vw; padding-top: 38px; }.panel, .results-section { padding: 20px; }
   .login-card { padding: 28px 22px; }.login-brand { margin-bottom: 34px; }.metric-grid { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: 1fr 1fr; }.confirmation-panel { align-items: stretch; flex-direction: column; }
+  .issue-actions, .correction-actions { align-items: flex-start; flex-direction: column; }.correction-actions .outline-button { width: 100%; }
   .confirmation-panel .primary-button { width: 100%; }.footer { flex-direction: column; gap: 5px; }
 }

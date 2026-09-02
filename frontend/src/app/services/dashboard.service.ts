@@ -25,4 +25,8 @@ export class DashboardService {
   audit(): Observable<AuditEvent[]> {
     return this.http.get<AuditEvent[]>(`${this.baseUrl}/audit`);
   }
+
+  exportIssues(batchId: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/batches/${batchId}/issues.csv`, { responseType: 'blob' });
+  }
 }

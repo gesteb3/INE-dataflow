@@ -1,7 +1,11 @@
-"""Endpoints para consultar historial y auditoría."""
+"""Endpoints para consultar historial, incidencias y auditoría."""
+
+import csv
+from io import StringIO
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from uuid import UUID
 
 from app.api.auth import current_user, require_roles
@@ -32,6 +36,35 @@ def get_batch_issues(batch_id: UUID, _user: UserInfo = Depends(current_user)) ->
         return [ValidationIssue(**row) for row in list_batch_issues(batch_id)]
     except psycopg.Error as error:
         raise HTTPException(status_code=503, detail="No se pudieron consultar las incidencias") from error
+
+
+@router.get("/batches/{batch_id}/issues.csv", tags=["batches"])
+def export_batch_issues(batch_id: UUID, _user: UserInfo = Depends(current_user)) -> StreamingResponse:
+    """Descarga las incidencias de un lote para corregir y volver a procesar."""
+
+    try:
+        issues = list_batch_issues(batch_id)
+    except psycopg.Error as error:
+        raise HTTPException(status_code=503, detail="No se pudieron exportar las incidencias") from error
+
+    output = StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["code", "severity", "row", "column", "message", "value"])
+    for issue in issues:
+        writer.writerow([
+            issue.get("code"),
+            issue.get("severity"),
+            issue.get("row"),
+            issue.get("column"),
+            issue.get("message"),
+            issue.get("value"),
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="errores-{batch_id}.csv"'},
+    )
 
 
 @router.get("/audit", response_model=list[AuditEvent], tags=["audit"])
