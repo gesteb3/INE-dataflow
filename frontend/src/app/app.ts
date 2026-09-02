@@ -65,6 +65,11 @@ export class App implements OnInit {
       ? this.departments().filter((item) => item.department_code === departmentCode)
       : this.departments();
   });
+  protected readonly departmentSummaryRows = computed(() =>
+    [...this.visibleDepartments()]
+      .sort((left, right) => right.valid_records - left.valid_records)
+      .slice(0, 6),
+  );
   protected readonly selectedBatch = computed(() =>
     this.batches().find((item) => item.batch_id === this.selectedBatchId()) ?? null,
   );
