@@ -11,6 +11,9 @@ Esqueleto inicial de la API de INE DataFlow construido con FastAPI.
 - Endpoint `POST /api/v1/uploads/{batch_id}/confirm` para publicar las filas válidas después de la revisión.
 - Endpoint `GET /api/v1/reports/summary` para indicadores generales de calidad.
 - Endpoint `GET /api/v1/reports/by-department` para métricas agregadas por departamento.
+- Endpoint `POST /api/v1/auth/login` para iniciar sesión con roles.
+- Endpoint `GET /api/v1/batches` para consultar el historial de lotes.
+- Endpoint `GET /api/v1/audit` para consultar eventos de auditoría como administrador.
 - Prueba automatizada del endpoint con pytest.
 - Persistencia de lotes, errores y registros válidos mediante PostgreSQL.
 
@@ -55,6 +58,8 @@ Los endpoints de reportes devuelven JSON de solo lectura para una futura conexi�
 
 - `http://localhost:8001/api/v1/reports/summary`
 - `http://localhost:8001/api/v1/reports/by-department`
+
+Para la demostración local se puede iniciar sesión con `admin@ine.local` y la contraseña temporal `INEDataFlow2026!`. Esta credencial es únicamente para el entorno académico; debe reemplazarse mediante una gestión segura de secretos antes de cualquier despliegue real.
 
 El puerto externo predeterminado es `8001` porque `8000` puede estar ocupado por otro servicio local. Se puede cambiar con la variable `INE_DATAFLOW_API_PORT`.
 

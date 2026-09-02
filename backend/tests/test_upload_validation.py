@@ -3,9 +3,14 @@ from io import BytesIO
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.schemas.auth import UserInfo
+from app.services.auth import create_access_token
 
 
 client = TestClient(app)
+AUTH_HEADERS = {
+    "Authorization": f"Bearer {create_access_token(UserInfo(username='tester', full_name='Test User', role='ADMIN'))}"
+}
 
 
 def test_validate_upload_returns_summary_and_errors(monkeypatch) -> None:
@@ -21,6 +26,7 @@ def test_validate_upload_returns_summary_and_errors(monkeypatch) -> None:
     response = client.post(
         "/api/v1/uploads/validate",
         files={"file": ("encuesta.csv", BytesIO(content), "text/csv")},
+        headers=AUTH_HEADERS,
     )
 
     assert response.status_code == 200
@@ -41,6 +47,7 @@ def test_validate_upload_rejects_non_csv_file(monkeypatch) -> None:
     response = client.post(
         "/api/v1/uploads/validate",
         files={"file": ("encuesta.txt", BytesIO(b"not csv"), "text/plain")},
+        headers=AUTH_HEADERS,
     )
 
     assert response.status_code == 200

@@ -4,3 +4,4 @@ pytest
 httpx
 python-multipart
 psycopg[binary]
+PyJWT

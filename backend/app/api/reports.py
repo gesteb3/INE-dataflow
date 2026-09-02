@@ -1,17 +1,19 @@
 """Endpoints de reportes agregados para consumo de Power BI."""
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.api.auth import current_user
 from app.repositories.reports import get_department_report, get_report_summary
 from app.schemas.reports import DepartmentReport, ReportSummary
+from app.schemas.auth import UserInfo
 
 
 router = APIRouter()
 
 
 @router.get("/reports/summary", response_model=ReportSummary, tags=["reports"])
-def report_summary() -> ReportSummary:
+def report_summary(_user: UserInfo = Depends(current_user)) -> ReportSummary:
     """Devuelve indicadores generales de procesamiento y calidad."""
 
     try:
@@ -21,7 +23,7 @@ def report_summary() -> ReportSummary:
 
 
 @router.get("/reports/by-department", response_model=list[DepartmentReport], tags=["reports"])
-def report_by_department() -> list[DepartmentReport]:
+def report_by_department(_user: UserInfo = Depends(current_user)) -> list[DepartmentReport]:
     """Devuelve métricas de registros confirmados agrupadas por departamento."""
 
     try:
