@@ -2,8 +2,11 @@
 
 from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel
+
+from app.schemas.validation import ValidationIssue
 
 
 class ReportSummary(BaseModel):
@@ -29,3 +32,14 @@ class DepartmentReport(BaseModel):
     average_household_size: Decimal | None
     average_monthly_income_gtq: Decimal | None
     total_monthly_income_gtq: Decimal
+
+
+class PowerBIReport(BaseModel):
+    """Respuesta consolidada para crear varias tablas desde una sola consulta M."""
+
+    batch_id: UUID | None
+    generated_at: datetime
+    summary: ReportSummary
+    departments: list[DepartmentReport]
+    valid_records: list[dict]
+    issues: list[ValidationIssue]

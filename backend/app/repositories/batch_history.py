@@ -24,7 +24,7 @@ def list_batches(limit: int = 50) -> list[dict]:
             return cursor.fetchall()
 
 
-def list_batch_issues(batch_id: UUID) -> list[dict]:
+def list_batch_issues(batch_id: UUID | None) -> list[dict]:
     with psycopg.connect(database_url(), row_factory=dict_row) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -32,15 +32,15 @@ def list_batch_issues(batch_id: UUID) -> list[dict]:
                 SELECT code, severity, row_number AS row, column_name AS column,
                        message, received_value AS value
                 FROM validation_errors
-                WHERE batch_id = %s
+                WHERE (%s::uuid IS NULL OR batch_id = %s::uuid)
                 ORDER BY id
                 """,
-                (batch_id,),
+                (batch_id, batch_id),
             )
             return cursor.fetchall()
 
 
-def list_valid_records(batch_id: UUID) -> list[dict]:
+def list_valid_records(batch_id: UUID | None) -> list[dict]:
     """Devuelve únicamente las filas publicadas de un lote confirmado."""
 
     with psycopg.connect(database_url(), row_factory=dict_row) as connection:
@@ -53,9 +53,9 @@ def list_valid_records(batch_id: UUID) -> list[dict]:
                        v.monthly_income_gtq
                 FROM valid_survey_records v
                 INNER JOIN survey_batches b ON b.id = v.batch_id
-                WHERE v.batch_id = %s AND b.status = 'CONFIRMED'
+                WHERE (%s::uuid IS NULL OR v.batch_id = %s::uuid) AND b.status = 'CONFIRMED'
                 ORDER BY v.id
                 """,
-                (batch_id,),
+                (batch_id, batch_id),
             )
             return cursor.fetchall()
