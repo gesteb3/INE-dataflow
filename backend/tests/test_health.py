@@ -13,5 +13,5 @@ def test_health_endpoint_returns_service_status() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "ine-dataflow-api",
-        "version": "9.1.9",
+        "version": "0.1.0",
     }
